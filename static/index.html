@@ -11,6 +11,17 @@
         .json-key { color: var(--bs-primary); }
         .json-string { color: var(--bs-success); }
         .json-number { color: var(--bs-warning); }
+        /* Syntax highlighting */
+        .comment { color: var(--bs-secondary); }
+        .string { color: var(--bs-success); }
+        .number { color: var(--bs-warning); }
+        .keyword { color: var(--bs-primary); }
+        .function { color: var(--bs-info); }
+        .variable { color: var(--bs-danger); }
+        .operator { color: var(--bs-light); }
+        .python-builtin { color: var(--bs-purple); }
+        .shell-command { color: var(--bs-teal); }
+        .shell-param { color: var(--bs-pink); }
         .code-snippet { 
             background-color: var(--bs-light);
             padding: 1rem;
@@ -110,60 +121,60 @@
                         <div class="code-snippet">
                             <span class="language-label">cURL</span>
                             <pre class="mb-0">
-# Example analyzing a Shakespeare quote
-curl -X POST http://localhost:5000/api/count-chars \
--H "Content-Type: application/json" \
--d '{
+<span class="comment"># Example analyzing a Shakespeare quote</span>
+<span class="shell-command">curl</span> <span class="shell-param">-X POST</span> http://localhost:5000/api/count-chars \
+<span class="shell-param">-H</span> <span class="string">"Content-Type: application/json"</span> \
+<span class="shell-param">-d</span> <span class="string">'{
     "text": "To be, or not to be, that is the question"
-}'</pre>
+}'</span></pre>
                         </div>
 
                         <div class="code-snippet">
                             <span class="language-label">Python</span>
                             <pre class="mb-0">
-import requests
+<span class="keyword">import</span> <span class="python-builtin">requests</span>
 
-# Example: Analyze text from a string
-text = """
+<span class="comment"># Example: Analyze text from a string</span>
+<span class="variable">text</span> = <span class="string">"""
 In programming we often say:
 Hello, World! Hello, Python! Hello, Programming!
-"""
+"""</span>
 
-response = requests.post(
-    'http://localhost:5000/api/count-chars',
-    json={'text': text}
+<span class="variable">response</span> = <span class="python-builtin">requests</span>.<span class="function">post</span>(
+    <span class="string">'http://localhost:5000/api/count-chars'</span>,
+    <span class="variable">json</span>={<span class="string">'text'</span>: <span class="variable">text</span>}
 )
 
-if response.ok:
-    result = response.json()
-    print("Word Frequencies:")
-    for word, count in result['counts'].items():
-        print(f"'{word}': {count} times")
-    print(f"\nTotal words: {result['total_length']}")</pre>
+<span class="keyword">if</span> <span class="variable">response</span>.<span class="variable">ok</span>:
+    <span class="variable">result</span> = <span class="variable">response</span>.<span class="function">json</span>()
+    <span class="python-builtin">print</span>(<span class="string">"Word Frequencies:"</span>)
+    <span class="keyword">for</span> <span class="variable">word</span>, <span class="variable">count</span> <span class="keyword">in</span> <span class="variable">result</span>[<span class="string">'counts'</span>].<span class="function">items</span>():
+        <span class="python-builtin">print</span>(<span class="function">f</span><span class="string">"'{word}': {count} times"</span>)
+    <span class="python-builtin">print</span>(<span class="function">f</span><span class="string">"\nTotal words: {result['total_length']}"</span>)</pre>
                         </div>
 
                         <div class="code-snippet">
                             <span class="language-label">JavaScript</span>
                             <pre class="mb-0">
-// Example: Analyze a paragraph
-const text = `
+<span class="comment">// Example: Analyze a paragraph</span>
+<span class="keyword">const</span> <span class="variable">text</span> = <span class="string">`
 The quick brown fox jumps over the lazy dog.
 The lazy dog sleeps while the quick fox runs.
-`;
+`</span>;
 
-fetch('http://localhost:5000/api/count-chars', {
-    method: 'POST',
-    headers: {
-        'Content-Type': 'application/json',
+<span class="function">fetch</span>(<span class="string">'http://localhost:5000/api/count-chars'</span>, {
+    <span class="variable">method</span>: <span class="string">'POST'</span>,
+    <span class="variable">headers</span>: {
+        <span class="string">'Content-Type'</span>: <span class="string">'application/json'</span>,
     },
-    body: JSON.stringify({ text })
+    <span class="variable">body</span>: <span class="function">JSON.stringify</span>({ <span class="variable">text</span> })
 })
-.then(response => response.json())
-.then(data => {
-    console.log('Word Frequencies:', data.counts);
-    console.log('Total Words:', data.total_length);
+.<span class="function">then</span>(<span class="variable">response</span> => <span class="variable">response</span>.<span class="function">json</span>())
+.<span class="function">then</span>(<span class="variable">data</span> => {
+    <span class="function">console.log</span>(<span class="string">'Word Frequencies:'</span>, <span class="variable">data</span>.<span class="variable">counts</span>);
+    <span class="function">console.log</span>(<span class="string">'Total Words:'</span>, <span class="variable">data</span>.<span class="variable">total_length</span>);
 })
-.catch(error => console.error('Error:', error));</pre>
+.<span class="function">catch</span>(<span class="variable">error</span> => <span class="function">console.error</span>(<span class="string">'Error:'</span>, <span class="variable">error</span>));</pre>
                         </div>
 
                         <h6 class="mt-4 mb-3">File Upload Endpoint</h6>
@@ -172,95 +183,95 @@ fetch('http://localhost:5000/api/count-chars', {
                         <div class="code-snippet">
                             <span class="language-label">cURL</span>
                             <pre class="mb-0">
-# Upload and analyze a PDF file
-curl -X POST http://localhost:5000/api/count-chars \
--F "file=@sample.pdf"
+<span class="comment"># Upload and analyze a PDF file</span>
+<span class="shell-command">curl</span> <span class="shell-param">-X POST</span> http://localhost:5000/api/count-chars \
+<span class="shell-param">-F</span> <span class="string">"file=@sample.pdf"</span>
 
-# Upload and analyze a Markdown file
-curl -X POST http://localhost:5000/api/count-chars \
--F "file=@README.md"</pre>
+<span class="comment"># Upload and analyze a Markdown file</span>
+<span class="shell-command">curl</span> <span class="shell-param">-X POST</span> http://localhost:5000/api/count-chars \
+<span class="shell-param">-F</span> <span class="string">"file=@README.md"</span></pre>
                         </div>
 
                         <div class="code-snippet">
                             <span class="language-label">Python</span>
                             <pre class="mb-0">
-import requests
-from pathlib import Path
+<span class="keyword">import</span> <span class="python-builtin">requests</span>
+<span class="keyword">from</span> <span class="python-builtin">pathlib</span> <span class="keyword">import</span> <span class="python-builtin">Path</span>
 
-def analyze_file(file_path):
-    """Analyze word frequency in a file"""
-    file_path = Path(file_path)
+<span class="keyword">def</span> <span class="function">analyze_file</span>(<span class="variable">file_path</span>):
+    <span class="comment">"""Analyze word frequency in a file"""</span>
+    <span class="variable">file_path</span> = <span class="python-builtin">Path</span>(<span class="variable">file_path</span>)
 
-    with open(file_path, 'rb') as f:
-        response = requests.post(
-            'http://localhost:5000/api/count-chars',
-            files={'file': (file_path.name, f)}
+    <span class="keyword">with</span> <span class="python-builtin">open</span>(<span class="variable">file_path</span>, <span class="string">'rb'</span>) <span class="keyword">as</span> <span class="variable">f</span>:
+        <span class="variable">response</span> = <span class="python-builtin">requests</span>.<span class="function">post</span>(
+            <span class="string">'http://localhost:5000/api/count-chars'</span>,
+            <span class="variable">files</span>={<span class="string">'file'</span>: (<span class="variable">file_path</span>.<span class="variable">name</span>, <span class="variable">f</span>)}
         )
 
-    if response.ok:
-        result = response.json()
-        print(f"\nAnalysis of {file_path.name}:")
-        # Get top 10 most frequent words
-        sorted_words = sorted(
-            result['counts'].items(),
-            key=lambda x: x[1],
-            reverse=True
-        )[:10]
+    <span class="keyword">if</span> <span class="variable">response</span>.<span class="variable">ok</span>:
+        <span class="variable">result</span> = <span class="variable">response</span>.<span class="function">json</span>()
+        <span class="python-builtin">print</span>(<span class="function">f</span><span class="string">"\nAnalysis of {file_path.name}:"</span>)
+        <span class="comment"># Get top 10 most frequent words</span>
+        <span class="variable">sorted_words</span> = <span class="python-builtin">sorted</span>(
+            <span class="variable">result</span>[<span class="string">'counts'</span>].<span class="function">items</span>(),
+            <span class="variable">key</span>=<span class="keyword">lambda</span> <span class="variable">x</span>: <span class="variable">x</span>[<span class="number">1</span>],
+            <span class="variable">reverse</span>=<span class="boolean">True</span>
+        )[:<span class="number">10</span>]
 
-        print("\nTop 10 most frequent words:")
-        for word, count in sorted_words:
-            print(f"'{word}': {count} times")
+        <span class="python-builtin">print</span>(<span class="string">"\nTop 10 most frequent words:"</span>)
+        <span class="keyword">for</span> <span class="variable">word</span>, <span class="variable">count</span> <span class="keyword">in</span> <span class="variable">sorted_words</span>:
+            <span class="python-builtin">print</span>(<span class="function">f</span><span class="string">"'{word}': {count} times"</span>)
 
-        print(f"\nTotal words: {result['total_length']}")
-    else:
-        print(f"Error: {response.json().get('error', 'Unknown error')}")
+        <span class="python-builtin">print</span>(<span class="function">f</span><span class="string">"\nTotal words: {result['total_length']}"</span>)
+    <span class="keyword">else</span>:
+        <span class="python-builtin">print</span>(<span class="function">f</span><span class="string">"Error: {response.json().get('error', 'Unknown error')}"</span>)
 
-# Example usage
-analyze_file('document.pdf')
-analyze_file('notes.md')</pre>
+<span class="comment"># Example usage</span>
+<span class="function">analyze_file</span>(<span class="string">'document.pdf'</span>)
+<span class="function">analyze_file</span>(<span class="string">'notes.md'</span>)</pre>
                         </div>
 
                         <div class="code-snippet">
                             <span class="language-label">JavaScript</span>
                             <pre class="mb-0">
-// Example: File upload from an HTML form
-const analyzeFile = async (fileInput) => {
-    const file = fileInput.files[0];
-    if (!file) {
-        console.error('No file selected');
-        return;
+<span class="comment">// Example: File upload from an HTML form</span>
+<span class="keyword">const</span> <span class="function">analyzeFile</span> = <span class="keyword">async</span> (<span class="variable">fileInput</span>) => {
+    <span class="keyword">const</span> <span class="variable">file</span> = <span class="variable">fileInput</span>.<span class="variable">files</span>[<span class="number">0</span>];
+    <span class="keyword">if</span> (!<span class="variable">file</span>) {
+        <span class="function">console.error</span>(<span class="string">'No file selected'</span>);
+        <span class="keyword">return</span>;
     }
 
-    const formData = new FormData();
-    formData.append('file', file);
+    <span class="keyword">const</span> <span class="variable">formData</span> = <span class="keyword">new</span> <span class="function">FormData</span>();
+    <span class="variable">formData</span>.<span class="function">append</span>(<span class="string">'file'</span>, <span class="variable">file</span>);
 
-    try {
-        const response = await fetch('/api/count-chars', {
-            method: 'POST',
-            body: formData
+    <span class="keyword">try</span> {
+        <span class="keyword">const</span> <span class="variable">response</span> = <span class="keyword">await</span> <span class="function">fetch</span>(<span class="string">'/api/count-chars'</span>, {
+            <span class="variable">method</span>: <span class="string">'POST'</span>,
+            <span class="variable">body</span>: <span class="variable">formData</span>
         });
 
-        const data = await response.json();
+        <span class="keyword">const</span> <span class="variable">data</span> = <span class="keyword">await</span> <span class="variable">response</span>.<span class="function">json</span>();
 
-        if (response.ok) {
-            console.log(`Analysis of ${file.name}:`);
-            console.log('Word Frequencies:', data.counts);
-            console.log('Total Words:', data.total_length);
+        <span class="keyword">if</span> (<span class="variable">response</span>.<span class="variable">ok</span>) {
+            <span class="function">console.log</span>(<span class="function">`Analysis of ${file.name}:`</span>);
+            <span class="function">console.log</span>(<span class="string">'Word Frequencies:'</span>, <span class="variable">data</span>.<span class="variable">counts</span>);
+            <span class="function">console.log</span>(<span class="string">'Total Words:'</span>, <span class="variable">data</span>.<span class="variable">total_length</span>);
 
-            // Get top 10 most frequent words
-            const sortedWords = Object.entries(data.counts)
-                .sort(([,a], [,b]) => b - a)
-                .slice(0, 10);
+            <span class="comment">// Get top 10 most frequent words</span>
+            <span class="keyword">const</span> <span class="variable">sortedWords</span> = <span class="function">Object.entries</span>(<span class="variable">data</span>.<span class="variable">counts</span>)
+                .<span class="function">sort</span>(([,<span class="variable">a</span>], [,<span class="variable">b</span>]) => <span class="variable">b</span> - <span class="variable">a</span>)
+                .<span class="function">slice</span>(<span class="number">0</span>, <span class="number">10</span>);
 
-            console.log('\nTop 10 most frequent words:');
-            sortedWords.forEach(([word, count]) => {
-                console.log(`'${word}': ${count} times`);
+            <span class="function">console.log</span>(<span class="string">'\nTop 10 most frequent words:'</span>);
+            <span class="variable">sortedWords</span>.<span class="function">forEach</span>(([,<span class="variable">word</span>, <span class="variable">count</span>]) => {
+                <span class="function">console.log</span>(<span class="function">`'${word}': ${count} times`</span>);
             });
-        } else {
-            throw new Error(data.error || 'Failed to analyze file');
+        } <span class="keyword">else</span> {
+            <span class="keyword">throw</span> <span class="keyword">new</span> <span class="function">Error</span>(<span class="variable">data</span>.<span class="variable">error</span> || <span class="string">'Failed to analyze file'</span>);
         }
-    } catch (error) {
-        console.error('Error:', error.message);
+    } <span class="keyword">catch</span> (<span class="variable">error</span>) {
+        <span class="function">console.error</span>(<span class="string">'Error:'</span>, <span class="variable">error</span>.<span class="variable">message</span>);
     }
 };</pre>
                         </div>
