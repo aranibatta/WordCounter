@@ -159,6 +159,32 @@
             border-radius: 8px;
             padding: 1rem;
         }
+
+        .language-selector select.form-select {
+            background-color: white;
+            border: 1px solid #DDD;
+            border-radius: 4px;
+            padding: 0.5rem 1rem;
+            font-family: 'IBM Plex Sans', sans-serif;
+            color: var(--text-primary);
+            cursor: pointer;
+            transition: all 0.2s ease;
+        }
+
+        .language-selector select.form-select:hover {
+            border-color: var(--link-color);
+        }
+
+        .language-selector select.form-select:focus {
+            border-color: var(--link-color);
+            box-shadow: 0 0 0 0.2rem rgba(244, 123, 84, 0.25);
+            outline: none;
+        }
+
+        .language-selector {
+            margin-bottom: 1rem;
+            max-width: 200px;
+        }
     </style>
 </head>
 <body>
