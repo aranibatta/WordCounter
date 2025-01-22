@@ -183,33 +183,19 @@
 
         .form-control[type="file"]::file-selector-button {
             padding: 0.5rem 1rem;
-            border: none;
+            border: 1px solid #DDD;
             border-radius: 4px;
             background-color: white;
             color: var(--text-primary);
             font-family: 'IBM Plex Sans', sans-serif;
-            font-weight: 300;
+            font-weight: 400;
             cursor: pointer;
             margin-right: 1rem;
-            transition: background-color 0.2s;
         }
 
         .form-control[type="file"]::file-selector-button:hover {
             background-color: #f8f9fa;
         }
-
-        /* File input icon */
-        .form-control[type="file"]::before {
-            font-family: "bootstrap-icons";
-            content: "\F602"; /* upload icon */
-            margin-right: 0.5rem;
-        }
-
-        /* Hide the input group text since we're moving the icon into the button */
-        .input-group-text {
-            display: none;
-        }
-
         /* Update font weights */
         .nav-link {
             font-weight: 300;
@@ -227,6 +213,7 @@
         .form-label {
             font-weight: 400;
         }
+
     </style>
 </head>
 <body>
@@ -266,7 +253,12 @@
                             <div class="tab-pane fade" id="file-input" role="tabpanel">
                                 <div class="mb-3">
                                     <label for="inputFile" class="form-label">Upload a file (PDF, MD, or TXT):</label>
-                                    <input type="file" class="form-control" id="inputFile" accept=".pdf,.md,.txt">
+                                    <div class="input-group">
+                                        <input type="file" class="form-control" id="inputFile" accept=".pdf,.md,.txt">
+                                        <label class="input-group-text" for="inputFile">
+                                            <i class="bi bi-upload"></i>
+                                        </label>
+                                    </div>
                                 </div>
                             </div>
                         </div>
