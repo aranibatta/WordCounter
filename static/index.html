@@ -5,16 +5,17 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Character Counter API</title>
     <link href="https://cdn.replit.com/agent/bootstrap-agent-dark-theme.min.css" rel="stylesheet">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 </head>
 <body>
     <div class="container mt-5">
         <h1 class="mb-4">Character Counter API</h1>
-        
+
         <div class="card mb-4">
             <div class="card-body">
                 <h5 class="card-title">API Documentation</h5>
                 <h6 class="card-subtitle mb-3">Endpoint: POST /api/count-chars</h6>
-                
+
                 <h6 class="mb-2">Request Format:</h6>
                 <pre class="bg-dark text-light p-3 rounded"><code>{
     "text": "string to analyze"
@@ -31,7 +32,7 @@
             </div>
         </div>
 
-        <div class="card">
+        <div class="card mb-4">
             <div class="card-body">
                 <h5 class="card-title">Try it out</h5>
                 <div class="mb-3">
@@ -39,16 +40,60 @@
                     <textarea class="form-control" id="inputText" rows="3"></textarea>
                 </div>
                 <button class="btn btn-secondary" onclick="analyzeText()">Analyze</button>
-                
+
                 <div class="mt-3">
                     <h6>Result:</h6>
                     <pre class="bg-dark text-light p-3 rounded" id="result">Results will appear here...</pre>
                 </div>
             </div>
         </div>
+
+        <div class="card">
+            <div class="card-body">
+                <h5 class="card-title">Character Frequency Visualization</h5>
+                <div class="chart-container" style="position: relative; height:400px; width:100%">
+                    <canvas id="freqChart"></canvas>
+                </div>
+            </div>
+        </div>
     </div>
 
     <script>
+        let chart = null;
+
+        function createChart(labels, data) {
+            if (chart) {
+                chart.destroy();
+            }
+
+            const ctx = document.getElementById('freqChart').getContext('2d');
+            chart = new Chart(ctx, {
+                type: 'bar',
+                data: {
+                    labels: labels,
+                    datasets: [{
+                        label: 'Character Frequency',
+                        data: data,
+                        backgroundColor: 'rgba(var(--bs-info-rgb), 0.5)',
+                        borderColor: 'rgba(var(--bs-info-rgb), 1)',
+                        borderWidth: 1
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    scales: {
+                        y: {
+                            beginAtZero: true,
+                            ticks: {
+                                stepSize: 1
+                            }
+                        }
+                    }
+                }
+            });
+        }
+
         async function analyzeText() {
             const text = document.getElementById('inputText').value;
             const resultElement = document.getElementById('result');
@@ -64,6 +109,14 @@
 
                 const data = await response.json();
                 resultElement.textContent = JSON.stringify(data, null, 2);
+
+                // Prepare data for chart
+                const counts = data.counts;
+                const labels = Object.keys(counts);
+                const frequencies = Object.values(counts);
+
+                // Create or update chart
+                createChart(labels, frequencies);
             } catch (error) {
                 resultElement.textContent = 'Error: ' + error.message;
             }
