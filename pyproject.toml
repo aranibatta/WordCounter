@@ -9,5 +9,7 @@ dependencies = [
     "flask-cors>=5.0.0",
     "flask-sqlalchemy>=3.1.1",
     "gunicorn>=23.0.0",
+    "markdown>=3.7",
     "psycopg2-binary>=2.9.10",
+    "pypdf2>=3.0.1",
 ]
