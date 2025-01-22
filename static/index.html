@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Word Counter</title>
+    <title>Word Counter API</title>
     <!-- Add IBM Plex Sans font -->
     <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600&display=swap" rel="stylesheet">
     <link href="https://cdn.replit.com/agent/bootstrap-agent-dark-theme.min.css" rel="stylesheet">
@@ -15,16 +15,14 @@
     <style>
         :root {
             --site-bg-color: #FBFAE9;
-            --text-primary: #222222;
+            --text-primary: #1A1A1A;
             --link-color: #F47B54;
             --link-hover: #D35A34;
             --code-bg: #2D2D2D;
-            --text-muted: #666666;
         }
 
         body {
             font-family: 'IBM Plex Sans', sans-serif;
-            font-weight: 300;
             background-color: var(--site-bg-color);
             color: var(--text-primary);
         }
@@ -36,7 +34,6 @@
             border-radius: 8px;
             margin: 1.5em 0;
             font-family: 'IBM Plex Mono', monospace;
-            padding-top: 2.5rem;
         }
 
         code[class*="language-"] {
@@ -79,13 +76,11 @@
 
         .language-label {
             position: absolute;
-            top: 0.75rem;
+            top: 0.5rem;
             left: 1rem;
-            font-size: 0.75rem;
-            color: var(--text-muted);
+            font-size: 0.8rem;
+            color: #888888;
             font-family: 'IBM Plex Sans', sans-serif;
-            text-transform: uppercase;
-            letter-spacing: 0.5px;
             z-index: 10;
         }
 
@@ -94,7 +89,7 @@
             border: none;
             padding: 0.5rem 1rem;
             margin-right: 1rem;
-            font-weight: 300; /* Updated font weight */
+            font-weight: 500;
         }
 
         .nav-tabs .nav-link.active {
@@ -107,7 +102,7 @@
             background-color: var(--link-color);
             border: none;
             padding: 0.5rem 1.5rem;
-            font-weight: 300; /* Updated font weight */
+            font-weight: 500;
             transition: background-color 0.2s;
         }
 
@@ -126,42 +121,19 @@
         }
 
         h1, h5, h6 {
-            font-weight: 500;
+            font-weight: 600;
             color: var(--text-primary);
-            margin-bottom: 1.5rem;
-        }
-        .card-title {
-            color: var(--text-primary);
-            font-weight: 300; /* Updated font weight */
-            margin-bottom: 1.5rem;
-        }
-
-        .text-muted {
-            color: var(--text-muted) !important;
         }
 
         .form-control {
-            background-color: white !important;
-            color: var(--text-primary) !important;
+            background-color: white;
             border: 1px solid #DDD;
             border-radius: 4px;
         }
 
         .form-control:focus {
-            background-color: white !important;
-            color: var(--text-primary) !important;
             border-color: var(--link-color);
             box-shadow: 0 0 0 0.2rem rgba(244, 123, 84, 0.25);
-        }
-
-        .code-snippet {
-            position: relative;
-            margin-top: 2rem;
-        }
-
-        pre[class*="language-"] {
-            margin-top: 0;
-            padding-top: 2.5rem;
         }
 
         #visualizationSection canvas {
@@ -169,56 +141,11 @@
             border-radius: 8px;
             padding: 1rem;
         }
-
-        /* Form label styles */
-        .form-label {
-            color: var(--text-primary); /* Updated color for form labels */
-            font-weight: 400;
-        }
-
-        /* Custom file input styling */
-        .form-control[type="file"] {
-            padding: 0.5rem;
-        }
-
-        .form-control[type="file"]::file-selector-button {
-            padding: 0.5rem 1rem;
-            border: 1px solid #DDD;
-            border-radius: 4px;
-            background-color: white;
-            color: var(--text-primary);
-            font-family: 'IBM Plex Sans', sans-serif;
-            font-weight: 400;
-            cursor: pointer;
-            margin-right: 1rem;
-        }
-
-        .form-control[type="file"]::file-selector-button:hover {
-            background-color: #f8f9fa;
-        }
-        /* Update font weights */
-        .nav-link {
-            font-weight: 300;
-        }
-
-        .btn {
-            font-weight: 300;
-        }
-
-        .card-title {
-            font-weight: 300;
-        }
-
-        /* Keep form labels slightly bolder for readability */
-        .form-label {
-            font-weight: 400;
-        }
-
     </style>
 </head>
 <body>
     <div class="container mt-5">
-        <h1 class="mb-4">Word Counter</h1>
+        <h1 class="mb-4">Word Counter API</h1>
 
         <ul class="nav nav-tabs mb-4" id="mainTabs" role="tablist">
             <li class="nav-item" role="presentation">
@@ -253,12 +180,7 @@
                             <div class="tab-pane fade" id="file-input" role="tabpanel">
                                 <div class="mb-3">
                                     <label for="inputFile" class="form-label">Upload a file (PDF, MD, or TXT):</label>
-                                    <div class="input-group">
-                                        <input type="file" class="form-control" id="inputFile" accept=".pdf,.md,.txt">
-                                        <label class="input-group-text" for="inputFile">
-                                            <i class="bi bi-upload"></i>
-                                        </label>
-                                    </div>
+                                    <input type="file" class="form-control" id="inputFile" accept=".pdf,.md,.txt">
                                 </div>
                             </div>
                         </div>
