@@ -37,146 +37,239 @@
     <div class="container mt-5">
         <h1 class="mb-4">Word Counter API</h1>
 
-        <!-- New API Documentation Section -->
-        <div class="card mb-4">
-            <div class="card-body">
-                <h5 class="card-title">REST API Documentation</h5>
+        <ul class="nav nav-tabs mb-4" id="mainTabs" role="tablist">
+            <li class="nav-item" role="presentation">
+                <button class="nav-link active" id="try-tab" data-bs-toggle="tab" data-bs-target="#try-it" type="button" role="tab">Try It</button>
+            </li>
+            <li class="nav-item" role="presentation">
+                <button class="nav-link" id="docs-tab" data-bs-toggle="tab" data-bs-target="#documentation" type="button" role="tab">API Documentation</button>
+            </li>
+        </ul>
 
-                <h6 class="mt-4 mb-3">Text Analysis Endpoint</h6>
-                <div class="code-snippet">
-                    <span class="language-label">cURL</span>
-                    <pre class="mb-0">
-curl -X POST http://localhost:5000/api/count-chars \
--H "Content-Type: application/json" \
--d '{"text": "Your text to analyze here"}'</pre>
+        <div class="tab-content" id="mainTabsContent">
+            <!-- Try It Tab -->
+            <div class="tab-pane fade show active" id="try-it" role="tabpanel">
+                <div class="card mb-4">
+                    <div class="card-body">
+                        <h5 class="card-title">Try it out</h5>
+                        <ul class="nav nav-tabs mb-3" id="inputTabs" role="tablist">
+                            <li class="nav-item" role="presentation">
+                                <button class="nav-link active" id="text-tab" data-bs-toggle="tab" data-bs-target="#text-input" type="button" role="tab">Text Input</button>
+                            </li>
+                            <li class="nav-item" role="presentation">
+                                <button class="nav-link" id="file-tab" data-bs-toggle="tab" data-bs-target="#file-input" type="button" role="tab">File Upload</button>
+                            </li>
+                        </ul>
+                        <div class="tab-content" id="inputTabsContent">
+                            <div class="tab-pane fade show active" id="text-input" role="tabpanel">
+                                <div class="mb-3">
+                                    <label for="inputText" class="form-label">Enter text to analyze:</label>
+                                    <textarea class="form-control" id="inputText" rows="3" placeholder="Enter some text here..."></textarea>
+                                </div>
+                            </div>
+                            <div class="tab-pane fade" id="file-input" role="tabpanel">
+                                <div class="mb-3">
+                                    <label for="inputFile" class="form-label">Upload a file (PDF, MD, or TXT):</label>
+                                    <input type="file" class="form-control" id="inputFile" accept=".pdf,.md,.txt">
+                                </div>
+                            </div>
+                        </div>
+                        <button class="btn btn-secondary" onclick="analyzeInput()">Analyze</button>
+
+                        <div class="mt-3" id="resultsSection" style="display: none;">
+                            <h6>Result:</h6>
+                            <div class="position-relative">
+                                <pre class="bg-light text-dark p-3 rounded" id="result">Results will appear here...</pre>
+                                <button class="btn btn-sm btn-outline-secondary copy-button" onclick="copyResult()">
+                                    <i class="bi bi-clipboard"></i> Copy
+                                </button>
+                            </div>
+                        </div>
+                    </div>
                 </div>
 
-                <div class="code-snippet">
-                    <span class="language-label">Python</span>
-                    <pre class="mb-0">
+                <div class="card" id="visualizationSection" style="display: none;">
+                    <div class="card-body">
+                        <h5 class="card-title">Word Frequency Visualization</h5>
+                        <div class="chart-container" style="position: relative; height:400px; width:100%">
+                            <canvas id="freqChart"></canvas>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- API Documentation Tab -->
+            <div class="tab-pane fade" id="documentation" role="tabpanel">
+                <div class="card mb-4">
+                    <div class="card-body">
+                        <h5 class="card-title">REST API Documentation</h5>
+
+                        <h6 class="mt-4 mb-3">Text Analysis Endpoint</h6>
+                        <p class="text-muted">Analyze text content directly using JSON payload</p>
+
+                        <div class="code-snippet">
+                            <span class="language-label">cURL</span>
+                            <pre class="mb-0">
+# Example analyzing a Shakespeare quote
+curl -X POST http://localhost:5000/api/count-chars \
+-H "Content-Type: application/json" \
+-d '{
+    "text": "To be, or not to be, that is the question"
+}'</pre>
+                        </div>
+
+                        <div class="code-snippet">
+                            <span class="language-label">Python</span>
+                            <pre class="mb-0">
 import requests
+
+# Example: Analyze text from a string
+text = """
+In programming we often say:
+Hello, World! Hello, Python! Hello, Programming!
+"""
 
 response = requests.post(
     'http://localhost:5000/api/count-chars',
-    json={'text': 'Your text to analyze here'}
+    json={'text': text}
 )
-result = response.json()</pre>
-                </div>
 
-                <div class="code-snippet">
-                    <span class="language-label">JavaScript</span>
-                    <pre class="mb-0">
+if response.ok:
+    result = response.json()
+    print("Word Frequencies:")
+    for word, count in result['counts'].items():
+        print(f"'{word}': {count} times")
+    print(f"\nTotal words: {result['total_length']}")</pre>
+                        </div>
+
+                        <div class="code-snippet">
+                            <span class="language-label">JavaScript</span>
+                            <pre class="mb-0">
+// Example: Analyze a paragraph
+const text = `
+The quick brown fox jumps over the lazy dog.
+The lazy dog sleeps while the quick fox runs.
+`;
+
 fetch('http://localhost:5000/api/count-chars', {
     method: 'POST',
     headers: {
         'Content-Type': 'application/json',
     },
-    body: JSON.stringify({
-        text: 'Your text to analyze here'
-    })
+    body: JSON.stringify({ text })
 })
 .then(response => response.json())
-.then(data => console.log(data));</pre>
-                </div>
+.then(data => {
+    console.log('Word Frequencies:', data.counts);
+    console.log('Total Words:', data.total_length);
+})
+.catch(error => console.error('Error:', error));</pre>
+                        </div>
 
-                <h6 class="mt-4 mb-3">File Upload Endpoint</h6>
-                <div class="code-snippet">
-                    <span class="language-label">cURL</span>
-                    <pre class="mb-0">
+                        <h6 class="mt-4 mb-3">File Upload Endpoint</h6>
+                        <p class="text-muted">Analyze content from PDF, Markdown, or Text files</p>
+
+                        <div class="code-snippet">
+                            <span class="language-label">cURL</span>
+                            <pre class="mb-0">
+# Upload and analyze a PDF file
 curl -X POST http://localhost:5000/api/count-chars \
--F "file=@path/to/your/file.pdf"</pre>
-                </div>
+-F "file=@sample.pdf"
 
-                <div class="code-snippet">
-                    <span class="language-label">Python</span>
-                    <pre class="mb-0">
+# Upload and analyze a Markdown file
+curl -X POST http://localhost:5000/api/count-chars \
+-F "file=@README.md"</pre>
+                        </div>
+
+                        <div class="code-snippet">
+                            <span class="language-label">Python</span>
+                            <pre class="mb-0">
 import requests
+from pathlib import Path
 
-with open('path/to/your/file.pdf', 'rb') as f:
-    response = requests.post(
-        'http://localhost:5000/api/count-chars',
-        files={'file': f}
-    )
-result = response.json()</pre>
-                </div>
+def analyze_file(file_path):
+    """Analyze word frequency in a file"""
+    file_path = Path(file_path)
 
-                <div class="code-snippet">
-                    <span class="language-label">JavaScript</span>
-                    <pre class="mb-0">
-const formData = new FormData();
-formData.append('file', fileInput.files[0]);
+    with open(file_path, 'rb') as f:
+        response = requests.post(
+            'http://localhost:5000/api/count-chars',
+            files={'file': (file_path.name, f)}
+        )
 
-fetch('http://localhost:5000/api/count-chars', {
-    method: 'POST',
-    body: formData
-})
-.then(response => response.json())
-.then(data => console.log(data));</pre>
-                </div>
-            </div>
-        </div>
+    if response.ok:
+        result = response.json()
+        print(f"\nAnalysis of {file_path.name}:")
+        # Get top 10 most frequent words
+        sorted_words = sorted(
+            result['counts'].items(),
+            key=lambda x: x[1],
+            reverse=True
+        )[:10]
 
-        <div class="card mb-4">
-            <div class="card-body">
-                <h5 class="card-title">API Documentation</h5>
-                <h6 class="card-subtitle mb-3">Endpoint: POST /api/count-chars</h6>
+        print("\nTop 10 most frequent words:")
+        for word, count in sorted_words:
+            print(f"'{word}': {count} times")
 
-                <h6 class="mb-2">Request Format:</h6>
-                <div class="position-relative">
-                    <pre class="bg-light text-dark p-3 rounded" id="requestExample"></pre>
-                </div>
+        print(f"\nTotal words: {result['total_length']}")
+    else:
+        print(f"Error: {response.json().get('error', 'Unknown error')}")
 
-                <h6 class="mb-2 mt-3">Response Format:</h6>
-                <div class="position-relative">
-                    <pre class="bg-light text-dark p-3 rounded" id="responseExample"></pre>
-                </div>
-            </div>
-        </div>
+# Example usage
+analyze_file('document.pdf')
+analyze_file('notes.md')</pre>
+                        </div>
 
-        <div class="card mb-4">
-            <div class="card-body">
-                <h5 class="card-title">Try it out</h5>
-                <ul class="nav nav-tabs mb-3" id="inputTabs" role="tablist">
-                    <li class="nav-item" role="presentation">
-                        <button class="nav-link active" id="text-tab" data-bs-toggle="tab" data-bs-target="#text-input" type="button" role="tab">Text Input</button>
-                    </li>
-                    <li class="nav-item" role="presentation">
-                        <button class="nav-link" id="file-tab" data-bs-toggle="tab" data-bs-target="#file-input" type="button" role="tab">File Upload</button>
-                    </li>
-                </ul>
-                <div class="tab-content" id="inputTabsContent">
-                    <div class="tab-pane fade show active" id="text-input" role="tabpanel">
-                        <div class="mb-3">
-                            <label for="inputText" class="form-label">Enter text to analyze:</label>
-                            <textarea class="form-control" id="inputText" rows="3" placeholder="Enter some text here..."></textarea>
+                        <div class="code-snippet">
+                            <span class="language-label">JavaScript</span>
+                            <pre class="mb-0">
+// Example: File upload from an HTML form
+const analyzeFile = async (fileInput) => {
+    const file = fileInput.files[0];
+    if (!file) {
+        console.error('No file selected');
+        return;
+    }
+
+    const formData = new FormData();
+    formData.append('file', file);
+
+    try {
+        const response = await fetch('/api/count-chars', {
+            method: 'POST',
+            body: formData
+        });
+
+        const data = await response.json();
+
+        if (response.ok) {
+            console.log(`Analysis of ${file.name}:`);
+            console.log('Word Frequencies:', data.counts);
+            console.log('Total Words:', data.total_length);
+
+            // Get top 10 most frequent words
+            const sortedWords = Object.entries(data.counts)
+                .sort(([,a], [,b]) => b - a)
+                .slice(0, 10);
+
+            console.log('\nTop 10 most frequent words:');
+            sortedWords.forEach(([word, count]) => {
+                console.log(`'${word}': ${count} times`);
+            });
+        } else {
+            throw new Error(data.error || 'Failed to analyze file');
+        }
+    } catch (error) {
+        console.error('Error:', error.message);
+    }
+};</pre>
+                        </div>
+
+                        <h6 class="mt-4 mb-3">Response Format</h6>
+                        <div class="position-relative">
+                            <pre class="bg-light text-dark p-3 rounded" id="responseExample"></pre>
                         </div>
                     </div>
-                    <div class="tab-pane fade" id="file-input" role="tabpanel">
-                        <div class="mb-3">
-                            <label for="inputFile" class="form-label">Upload a file (PDF, MD, or TXT):</label>
-                            <input type="file" class="form-control" id="inputFile" accept=".pdf,.md,.txt">
-                        </div>
-                    </div>
-                </div>
-                <button class="btn btn-secondary" onclick="analyzeInput()">Analyze</button>
-
-                <div class="mt-3" id="resultsSection" style="display: none;">
-                    <h6>Result:</h6>
-                    <div class="position-relative">
-                        <pre class="bg-light text-dark p-3 rounded" id="result">Results will appear here...</pre>
-                        <button class="btn btn-sm btn-outline-secondary copy-button" onclick="copyResult()">
-                            <i class="bi bi-clipboard"></i> Copy
-                        </button>
-                    </div>
-                </div>
-            </div>
-        </div>
-
-        <div class="card" id="visualizationSection" style="display: none;">
-            <div class="card-body">
-                <h5 class="card-title">Word Frequency Visualization</h5>
-                <div class="chart-container" style="position: relative; height:400px; width:100%">
-                    <canvas id="freqChart"></canvas>
                 </div>
             </div>
         </div>
@@ -188,21 +281,18 @@ fetch('http://localhost:5000/api/count-chars', {
 
         // Initialize documentation examples with formatted JSON
         document.addEventListener('DOMContentLoaded', function() {
-            const requestExample = {
-                "text": "string to analyze"
-            };
-            const fileRequestExample = "formData.append('file', fileObject)  // PDF, MD, or TXT file";
-            document.getElementById('requestExample').innerHTML = 
-                "// JSON Request\n" +
-                formatJSON(requestExample) +
-                "\n\n// OR Form Data\n" +
-                fileRequestExample;
-
             const responseExample = {
                 "counts": {
-                    "word": "count",
+                    "the": 4,
+                    "quick": 2,
+                    "brown": 1,
+                    "fox": 2,
+                    "jumps": 1,
+                    "over": 1,
+                    "lazy": 2,
+                    "dog": 2
                 },
-                "total_length": "integer"
+                "total_length": 15
             };
             document.getElementById('responseExample').innerHTML = formatJSON(responseExample);
         });
