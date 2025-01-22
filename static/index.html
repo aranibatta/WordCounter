@@ -19,6 +19,7 @@
             --link-color: #F47B54;
             --link-hover: #D35A34;
             --code-bg: #2D2D2D;
+            --heading-color: #222222;
         }
 
         body {
@@ -34,6 +35,7 @@
             border-radius: 8px;
             margin: 1.5em 0;
             font-family: 'IBM Plex Mono', monospace;
+            padding-top: 2.5em;
         }
 
         code[class*="language-"] {
@@ -84,6 +86,10 @@
             z-index: 10;
         }
 
+        #docTitle {
+            color: var(--heading-color);
+        }
+
         .nav-tabs .nav-link {
             color: var(--text-primary);
             border: none;
@@ -108,6 +114,18 @@
 
         .btn-secondary:hover {
             background-color: var(--link-hover);
+        }
+
+        .language-selector {
+            margin-bottom: 1rem;
+        }
+
+        .code-examples > div {
+            display: none;
+        }
+
+        .code-examples > div.active {
+            display: block;
         }
 
         .card {
@@ -212,24 +230,33 @@
             <div class="tab-pane fade" id="documentation" role="tabpanel">
                 <div class="card mb-4">
                     <div class="card-body">
-                        <h5 class="card-title">REST API Documentation</h5>
+                        <h5 class="card-title" id="docTitle">REST API Documentation</h5>
 
                         <h6 class="mt-4 mb-3">Text Analysis Endpoint</h6>
                         <p class="text-muted">Analyze text content directly using JSON payload</p>
 
-                        <div class="code-snippet">
-                            <span class="language-label">cURL</span>
-                            <pre><code class="language-bash"># Example analyzing a Shakespeare quote
+                        <div class="language-selector">
+                            <select class="form-select" onchange="switchLanguage(this.value)">
+                                <option value="curl">cURL</option>
+                                <option value="python">Python</option>
+                                <option value="javascript">JavaScript</option>
+                            </select>
+                        </div>
+
+                        <div class="code-examples">
+                            <div class="code-example active" data-language="curl">
+                                <pre><code class="language-bash">// cURL
+# Example analyzing a Shakespeare quote
 curl -X POST http://localhost:5000/api/count-chars \
 -H "Content-Type: application/json" \
 -d '{
     "text": "To be, or not to be, that is the question"
 }'</code></pre>
-                        </div>
+                            </div>
 
-                        <div class="code-snippet">
-                            <span class="language-label">Python</span>
-                            <pre><code class="language-python">import requests
+                            <div class="code-example" data-language="python">
+                                <pre><code class="language-python">// Python
+import requests
 
 # Example: Analyze text from a string
 text = """
@@ -248,11 +275,11 @@ if response.ok:
     for word, count in result['counts'].items():
         print(f"'{word}': {count} times")
     print(f"\nTotal words: {result['total_length']}")</code></pre>
-                        </div>
+                            </div>
 
-                        <div class="code-snippet">
-                            <span class="language-label">JavaScript</span>
-                            <pre><code class="language-javascript">// Example: Analyze a paragraph
+                            <div class="code-example" data-language="javascript">
+                                <pre><code class="language-javascript">// JavaScript
+// Example: Analyze a paragraph
 const text = `
 The quick brown fox jumps over the lazy dog.
 The lazy dog sleeps while the quick fox runs.
@@ -271,111 +298,24 @@ fetch('http://localhost:5000/api/count-chars', {
     console.log('Total Words:', data.total_length);
 })
 .catch(error => console.error('Error:', error));</code></pre>
-                        </div>
-
-                        <h6 class="mt-4 mb-3">File Upload Endpoint</h6>
-                        <p class="text-muted">Analyze content from PDF, Markdown, or Text files</p>
-
-                        <div class="code-snippet">
-                            <span class="language-label">cURL</span>
-                            <pre class="language-bash mb-0">
-<code class="language-bash"># Upload and analyze a PDF file
-curl -X POST http://localhost:5000/api/count-chars \
--F "file=@sample.pdf"
-
-# Upload and analyze a Markdown file
-curl -X POST http://localhost:5000/api/count-chars \
--F "file=@README.md"</code></pre>
-                        </div>
-
-                        <div class="code-snippet">
-                            <span class="language-label">Python</span>
-                            <pre class="language-python mb-0">
-<code class="language-python">import requests
-from pathlib import Path
-
-def analyze_file(file_path):
-    """Analyze word frequency in a file"""
-    file_path = Path(file_path)
-
-    with open(file_path, 'rb') as f:
-        response = requests.post(
-            'http://localhost:5000/api/count-chars',
-            files={'file': (file_path.name, f)}
-        )
-
-    if response.ok:
-        result = response.json()
-        print(f"\nAnalysis of {file_path.name}:")
-        # Get top 10 most frequent words
-        sorted_words = sorted(
-            result['counts'].items(),
-            key=lambda x: x[1],
-            reverse=True
-        )[:10]
-
-        print("\nTop 10 most frequent words:")
-        for word, count in sorted_words:
-            print(f"'{word}': {count} times")
-
-        print(f"\nTotal words: {result['total_length']}")
-    else:
-        print(f"Error: {response.json().get('error', 'Unknown error')}")
-
-# Example usage
-analyze_file('document.pdf')
-analyze_file('notes.md')</code></pre>
-                        </div>
-
-                        <div class="code-snippet">
-                            <span class="language-label">JavaScript</span>
-                            <pre class="language-javascript mb-0">
-<code class="language-javascript">// Example: File upload from an HTML form
-const analyzeFile = async (fileInput) => {
-    const file = fileInput.files[0];
-    if (!file) {
-        console.error('No file selected');
-        return;
-    }
-
-    const formData = new FormData();
-    formData.append('file', file);
-
-    try {
-        const response = await fetch('/api/count-chars', {
-            method: 'POST',
-            body: formData
-        });
-
-        const data = await response.json();
-
-        if (response.ok) {
-            console.log(`Analysis of ${file.name}:`);
-            console.log('Word Frequencies:', data.counts);
-            console.log('Total Words:', data.total_length);
-
-            // Get top 10 most frequent words
-            const sortedWords = Object.entries(data.counts)
-                .sort(([,a], [,b]) => b - a)
-                .slice(0, 10);
-
-            console.log('\nTop 10 most frequent words:');
-            sortedWords.forEach(([,word, count]) => {
-                console.log(`'${word}': ${count} times`);
-            });
-        } else {
-            throw new Error(data.error || 'Failed to analyze file');
-        }
-    } catch (error) {
-        console.error('Error:', error.message);
-    }
-};</code></pre>
+                            </div>
                         </div>
 
                         <h6 class="mt-4 mb-3">Response Format</h6>
-                        <div class="position-relative">
-                            <pre class="bg-light text-dark p-3 rounded" id="responseExample"></pre>
-                        </div>
+                        <pre><code class="language-json">// JSON Response
+{
+    "counts": {
+        "the": 4,
+        "quick": 2,
+        "brown": 1,
+        "fox": 2,
+        "jumps": 1,
+        "over": 1,
+        "lazy": 2,
+        "dog": 2
+    },
+    "total_length": 15
+}</code></pre>
                     </div>
                 </div>
             </div>
@@ -562,6 +502,14 @@ const analyzeFile = async (fileInput) => {
                 visualizationSection.style.display = 'none';
             }
         }
+        // Add this new function for language switching
+        function switchLanguage(language) {
+            document.querySelectorAll('.code-example').forEach(el => {
+                el.classList.remove('active');
+            });
+            document.querySelector(`.code-example[data-language="${language}"]`).classList.add('active');
+        }
+
         // Initialize Prism highlighting
         document.addEventListener('DOMContentLoaded', function() {
             Prism.highlightAll();
