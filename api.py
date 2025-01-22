@@ -2,6 +2,7 @@ from flask import Flask, request, jsonify, send_from_directory
 from flask_cors import CORS
 import logging
 import os
+import re
 from werkzeug.utils import secure_filename
 from PyPDF2 import PdfReader
 import markdown
@@ -53,12 +54,23 @@ def process_file_content(file):
             os.remove(file_path)
         raise e
 
+def clean_word(word):
+    # Remove URLs
+    url_pattern = re.compile(
+        r'http[s]?://(?:[a-zA-Z]|[0-9]|[$-_@.&+]|[!*\\(\\),]|(?:%[0-9a-fA-F][0-9a-fA-F]))+'
+    )
+    if url_pattern.match(word):
+        return ''
+
+    # Remove special characters and numbers, keep only letters
+    cleaned = re.sub(r'[^a-zA-Z]', '', word)
+    return cleaned.lower()
+
 @app.route('/api/count-chars', methods=['POST'])
 def count_characters():
     """
     API endpoint to count word occurrences in a string or uploaded file.
-
-    Accepts either JSON with text field or multipart/form-data with file
+    Ignores numbers, special characters, and URLs.
     """
     try:
         if 'file' in request.files:
@@ -78,22 +90,24 @@ def count_characters():
         if not isinstance(text, str):
             return jsonify({'error': 'Text must be a string'}), 400
 
-        # Count word occurrences
-        words = text.lower().split()
+        # Split text into words and clean them
+        words = text.split()
         word_counts = {}
+        valid_words = []
+
         for word in words:
-            # Remove common punctuation from words
-            word = word.strip('.,!?()[]{}":;')
-            if word:  # Only count non-empty strings
-                word_counts[word] = word_counts.get(word, 0) + 1
+            cleaned_word = clean_word(word)
+            if cleaned_word:  # Only count non-empty strings after cleaning
+                valid_words.append(cleaned_word)
+                word_counts[cleaned_word] = word_counts.get(cleaned_word, 0) + 1
 
         # Prepare response
         response = {
             'counts': word_counts,
-            'total_length': len(words)
+            'total_length': len(valid_words)
         }
 
-        logging.debug(f"Processed text with {len(words)} words and {len(word_counts)} unique words")
+        logging.debug(f"Processed text with {len(valid_words)} words and {len(word_counts)} unique words")
 
         return jsonify(response), 200
 
