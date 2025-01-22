@@ -11,17 +11,110 @@
         .json-key { color: var(--bs-primary); }
         .json-string { color: var(--bs-success); }
         .json-number { color: var(--bs-warning); }
+        .code-snippet { 
+            background-color: var(--bs-light);
+            padding: 1rem;
+            border-radius: 0.375rem;
+            margin-bottom: 1rem;
+            position: relative;
+        }
         .copy-button {
             position: absolute;
             top: 10px;
             right: 10px;
             cursor: pointer;
         }
+        .language-label {
+            position: absolute;
+            top: 10px;
+            left: 10px;
+            font-size: 0.8rem;
+            color: var(--bs-secondary);
+        }
     </style>
 </head>
 <body>
     <div class="container mt-5">
         <h1 class="mb-4">Word Counter API</h1>
+
+        <!-- New API Documentation Section -->
+        <div class="card mb-4">
+            <div class="card-body">
+                <h5 class="card-title">REST API Documentation</h5>
+
+                <h6 class="mt-4 mb-3">Text Analysis Endpoint</h6>
+                <div class="code-snippet">
+                    <span class="language-label">cURL</span>
+                    <pre class="mb-0">
+curl -X POST http://localhost:5000/api/count-chars \
+-H "Content-Type: application/json" \
+-d '{"text": "Your text to analyze here"}'</pre>
+                </div>
+
+                <div class="code-snippet">
+                    <span class="language-label">Python</span>
+                    <pre class="mb-0">
+import requests
+
+response = requests.post(
+    'http://localhost:5000/api/count-chars',
+    json={'text': 'Your text to analyze here'}
+)
+result = response.json()</pre>
+                </div>
+
+                <div class="code-snippet">
+                    <span class="language-label">JavaScript</span>
+                    <pre class="mb-0">
+fetch('http://localhost:5000/api/count-chars', {
+    method: 'POST',
+    headers: {
+        'Content-Type': 'application/json',
+    },
+    body: JSON.stringify({
+        text: 'Your text to analyze here'
+    })
+})
+.then(response => response.json())
+.then(data => console.log(data));</pre>
+                </div>
+
+                <h6 class="mt-4 mb-3">File Upload Endpoint</h6>
+                <div class="code-snippet">
+                    <span class="language-label">cURL</span>
+                    <pre class="mb-0">
+curl -X POST http://localhost:5000/api/count-chars \
+-F "file=@path/to/your/file.pdf"</pre>
+                </div>
+
+                <div class="code-snippet">
+                    <span class="language-label">Python</span>
+                    <pre class="mb-0">
+import requests
+
+with open('path/to/your/file.pdf', 'rb') as f:
+    response = requests.post(
+        'http://localhost:5000/api/count-chars',
+        files={'file': f}
+    )
+result = response.json()</pre>
+                </div>
+
+                <div class="code-snippet">
+                    <span class="language-label">JavaScript</span>
+                    <pre class="mb-0">
+const formData = new FormData();
+formData.append('file', fileInput.files[0]);
+
+fetch('http://localhost:5000/api/count-chars', {
+    method: 'POST',
+    body: formData
+})
+.then(response => response.json())
+.then(data => console.log(data));</pre>
+                </div>
+            </div>
+        </div>
 
         <div class="card mb-4">
             <div class="card-body">
@@ -48,7 +141,7 @@
                         <button class="nav-link active" id="text-tab" data-bs-toggle="tab" data-bs-target="#text-input" type="button" role="tab">Text Input</button>
                     </li>
                     <li class="nav-item" role="presentation">
-                        <button class="nav-link" id="file-tab" data-bs-toggle"tab" data-bs-target="#file-input" type="button" role="tab">File Upload</button>
+                        <button class="nav-link" id="file-tab" data-bs-toggle="tab" data-bs-target="#file-input" type="button" role="tab">File Upload</button>
                     </li>
                 </ul>
                 <div class="tab-content" id="inputTabsContent">
