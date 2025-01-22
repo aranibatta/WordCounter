@@ -153,6 +153,12 @@
         .form-control:focus {
             border-color: var(--link-color);
             box-shadow: 0 0 0 0.2rem rgba(244, 123, 84, 0.25);
+            background-color: white;
+        }
+
+        .form-control::placeholder {
+            color: #6c757d;
+            opacity: 1;
         }
 
         #visualizationSection canvas {
@@ -160,7 +166,6 @@
             border-radius: 8px;
             padding: 1rem;
         }
-
         .language-selector select.form-select {
             background-color: white;
             border: 1px solid #DDD;
@@ -291,7 +296,7 @@
                         <div class="code-examples text-examples">
                             <div class="code-example active" data-language="curl">
                                 <pre><code class="language-bash">// cURL
-# Example analyzing a Shakespeare quote
+// Example analyzing a Shakespeare quote
 curl -X POST http://localhost:5000/api/count-chars \
 -H "Content-Type: application/json" \
 -d '{
