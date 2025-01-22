@@ -233,17 +233,17 @@
                         <h5 class="card-title" id="docTitle">REST API Documentation</h5>
 
                         <h6 class="mt-4 mb-3">Text Analysis Endpoint</h6>
-                        <p class="text-muted">Analyze text content directly using JSON payload</p>
+                        <p class="text-muted" style="color: var(--heading-color)">Analyze text content directly using JSON payload</p>
 
                         <div class="language-selector">
-                            <select class="form-select" onchange="switchLanguage(this.value)">
+                            <select class="form-select" onchange="switchLanguage(this.value, 'text-examples')">
                                 <option value="curl">cURL</option>
                                 <option value="python">Python</option>
                                 <option value="javascript">JavaScript</option>
                             </select>
                         </div>
 
-                        <div class="code-examples">
+                        <div class="code-examples text-examples">
                             <div class="code-example active" data-language="curl">
                                 <pre><code class="language-bash">// cURL
 # Example analyzing a Shakespeare quote
@@ -298,6 +298,112 @@ fetch('http://localhost:5000/api/count-chars', {
     console.log('Total Words:', data.total_length);
 })
 .catch(error => console.error('Error:', error));</code></pre>
+                            </div>
+                        </div>
+
+                        <h6 class="mt-4 mb-3">File Upload Endpoint</h6>
+                        <p class="text-muted">Analyze content from PDF, Markdown, or Text files</p>
+
+                        <div class="language-selector">
+                            <select class="form-select" onchange="switchLanguage(this.value, 'file-examples')">
+                                <option value="curl">cURL</option>
+                                <option value="python">Python</option>
+                                <option value="javascript">JavaScript</option>
+                            </select>
+                        </div>
+
+                        <div class="code-examples file-examples">
+                            <div class="code-example active" data-language="curl">
+                                <pre><code class="language-bash">// cURL
+# Upload and analyze a PDF file
+curl -X POST http://localhost:5000/api/count-chars \
+-F "file=@sample.pdf"
+
+# Upload and analyze a Markdown file
+curl -X POST http://localhost:5000/api/count-chars \
+-F "file=@README.md"</code></pre>
+                            </div>
+
+                            <div class="code-example" data-language="python">
+                                <pre><code class="language-python">// Python
+import requests
+from pathlib import Path
+
+def analyze_file(file_path):
+    """Analyze word frequency in a file"""
+    file_path = Path(file_path)
+
+    with open(file_path, 'rb') as f:
+        response = requests.post(
+            'http://localhost:5000/api/count-chars',
+            files={'file': (file_path.name, f)}
+        )
+
+    if response.ok:
+        result = response.json()
+        print(f"\nAnalysis of {file_path.name}:")
+        # Get top 10 most frequent words
+        sorted_words = sorted(
+            result['counts'].items(),
+            key=lambda x: x[1],
+            reverse=True
+        )[:10]
+
+        print("\nTop 10 most frequent words:")
+        for word, count in sorted_words:
+            print(f"'{word}': {count} times")
+
+        print(f"\nTotal words: {result['total_length']}")
+    else:
+        print(f"Error: {response.json().get('error', 'Unknown error')}")
+
+# Example usage
+analyze_file('document.pdf')
+analyze_file('notes.md')</code></pre>
+                            </div>
+
+                            <div class="code-example" data-language="javascript">
+                                <pre><code class="language-javascript">// JavaScript
+// Example: File upload from an HTML form
+const analyzeFile = async (fileInput) => {
+    const file = fileInput.files[0];
+    if (!file) {
+        console.error('No file selected');
+        return;
+    }
+
+    const formData = new FormData();
+    formData.append('file', file);
+
+    try {
+        const response = await fetch('/api/count-chars', {
+            method: 'POST',
+            body: formData
+        });
+
+        const data = await response.json();
+
+        if (response.ok) {
+            console.log(`Analysis of ${file.name}:`);
+            console.log('Word Frequencies:', data.counts);
+            console.log('Total Words:', data.total_length);
+
+            // Get top 10 most frequent words
+            const sortedWords = Object.entries(data.counts)
+                .sort(([,a], [,b]) => b - a)
+                .slice(0, 10);
+
+            console.log('\nTop 10 most frequent words:');
+            sortedWords.forEach(([word, count]) => {
+                console.log(`'${word}': ${count} times`);
+            });
+        } else {
+            throw new Error(data.error || 'Failed to analyze file');
+        }
+    } catch (error) {
+        console.error('Error:', error.message);
+    }
+};</code></pre>
                             </div>
                         </div>
 
@@ -502,12 +608,12 @@ fetch('http://localhost:5000/api/count-chars', {
                 visualizationSection.style.display = 'none';
             }
         }
-        // Add this new function for language switching
-        function switchLanguage(language) {
-            document.querySelectorAll('.code-example').forEach(el => {
+        // Updated switchLanguage function
+        function switchLanguage(language, exampleClass) {
+            document.querySelectorAll(`.${exampleClass} > .code-example`).forEach(el => {
                 el.classList.remove('active');
             });
-            document.querySelector(`.code-example[data-language="${language}"]`).classList.add('active');
+            document.querySelector(`.${exampleClass} > .code-example[data-language="${language}"]`).classList.add('active');
         }
 
         // Initialize Prism highlighting
