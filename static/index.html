@@ -273,7 +273,7 @@
                             <div class="code-example active" data-language="curl">
                                 <pre><code class="language-bash">// cURL
 # Example analyzing a Shakespeare quote
-curl -X POST http://localhost:5000/api/count-chars \
+curl -X POST http://localhost:5000/api/analyze-text \
 -H "Content-Type: application/json" \
 -d '{
     "text": "To be, or not to be, that is the question"
@@ -291,7 +291,7 @@ Hello, World! Hello, Python! Hello, Programming!
 """
 
 response = requests.post(
-    'http://localhost:5000/api/count-chars',
+    'http://localhost:5000/api/analyze-text',
     json={'text': text}
 )
 
@@ -311,7 +311,7 @@ The quick brown fox jumps over the lazy dog.
 The lazy dog sleeps while the quick fox runs.
 `;
 
-fetch('http://localhost:5000/api/count-chars', {
+fetch('http://localhost:5000/api/analyze-text', {
     method: 'POST',
     headers: {
         'Content-Type': 'application/json',
@@ -342,11 +342,11 @@ fetch('http://localhost:5000/api/count-chars', {
                             <div class="code-example active" data-language="curl">
                                 <pre><code class="language-bash">// cURL
 # Upload and analyze a PDF file
-curl -X POST http://localhost:5000/api/count-chars \
+curl -X POST http://localhost:5000/api/analyze-file \
 -F "file=@sample.pdf"
 
 # Upload and analyze a Markdown file
-curl -X POST http://localhost:5000/api/count-chars \
+curl -X POST http://localhost:5000/api/analyze-file \
 -F "file=@README.md"</code></pre>
                             </div>
 
@@ -361,7 +361,7 @@ def analyze_file(file_path):
 
     with open(file_path, 'rb') as f:
         response = requests.post(
-            'http://localhost:5000/api/count-chars',
+            'http://localhost:5000/api/analyze-file',
             files={'file': (file_path.name, f)}
         )
 
@@ -402,7 +402,7 @@ const analyzeFile = async (fileInput) => {
     formData.append('file', file);
 
     try {
-        const response = await fetch('/api/count-chars', {
+        const response = await fetch('/api/analyze-file', {
             method: 'POST',
             body: formData
         });
@@ -586,7 +586,7 @@ const analyzeFile = async (fileInput) => {
 
                 if (activeTab === 'text-tab') {
                     const text = document.getElementById('inputText').value;
-                    response = await fetch('/api/count-chars', {
+                    response = await fetch('/api/analyze-text', {
                         method: 'POST',
                         headers: {
                             'Content-Type': 'application/json',
@@ -603,7 +603,7 @@ const analyzeFile = async (fileInput) => {
                     const formData = new FormData();
                     formData.append('file', file);
 
-                    response = await fetch('/api/count-chars', {
+                    response = await fetch('/api/analyze-file', {
                         method: 'POST',
                         body: formData
                     });

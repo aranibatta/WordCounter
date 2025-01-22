@@ -53,28 +53,18 @@ def process_file_content(file):
             os.remove(file_path)
         raise e
 
-@app.route('/api/count-chars', methods=['POST'])
-def count_characters():
+@app.route('/api/analyze-text', methods=['POST'])
+def analyze_text():
     """
-    API endpoint to count word occurrences in a string or uploaded file.
-
-    Accepts either JSON with text field or multipart/form-data with file
+    API endpoint to count word occurrences in a text string.
+    Accepts JSON with text field.
     """
     try:
-        if 'file' in request.files:
-            file = request.files['file']
-            if file and allowed_file(file.filename):
-                text = process_file_content(file)
-            else:
-                return jsonify({'error': 'Invalid file type. Allowed types: PDF, MD, TXT'}), 400
-        else:
-            # Get JSON data from request
-            data = request.get_json()
-            if not data or 'text' not in data:
-                return jsonify({'error': 'No text or file provided'}), 400
-            text = data['text']
+        data = request.get_json()
+        if not data or 'text' not in data:
+            return jsonify({'error': 'No text provided'}), 400
 
-        # Validate input type
+        text = data['text']
         if not isinstance(text, str):
             return jsonify({'error': 'Text must be a string'}), 400
 
@@ -94,11 +84,48 @@ def count_characters():
         }
 
         logging.debug(f"Processed text with {len(words)} words and {len(word_counts)} unique words")
-
         return jsonify(response), 200
 
     except Exception as e:
-        logging.error(f"Error processing request: {str(e)}")
+        logging.error(f"Error processing text request: {str(e)}")
+        return jsonify({'error': 'Internal server error'}), 500
+
+@app.route('/api/analyze-file', methods=['POST'])
+def analyze_file():
+    """
+    API endpoint to analyze text content from uploaded files (PDF, MD, or TXT).
+    Accepts multipart/form-data with file field.
+    """
+    try:
+        if 'file' not in request.files:
+            return jsonify({'error': 'No file provided'}), 400
+
+        file = request.files['file']
+        if not file or not allowed_file(file.filename):
+            return jsonify({'error': 'Invalid file type. Allowed types: PDF, MD, TXT'}), 400
+
+        text = process_file_content(file)
+
+        # Count word occurrences
+        words = text.lower().split()
+        word_counts = {}
+        for word in words:
+            # Remove common punctuation from words
+            word = word.strip('.,!?()[]{}":;')
+            if word:  # Only count non-empty strings
+                word_counts[word] = word_counts.get(word, 0) + 1
+
+        # Prepare response
+        response = {
+            'counts': word_counts,
+            'total_length': len(words)
+        }
+
+        logging.debug(f"Processed file with {len(words)} words and {len(word_counts)} unique words")
+        return jsonify(response), 200
+
+    except Exception as e:
+        logging.error(f"Error processing file request: {str(e)}")
         return jsonify({'error': 'Internal server error'}), 500
 
 # Add a simple homepage route that serves the static HTML
