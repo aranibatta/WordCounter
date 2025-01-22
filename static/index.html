@@ -15,10 +15,11 @@
     <style>
         :root {
             --site-bg-color: #FBFAE9;
-            --text-primary: #1A1A1A;
+            --text-primary: #222222;
             --link-color: #F47B54;
             --link-hover: #D35A34;
             --code-bg: #2D2D2D;
+            --text-muted: #666666;
         }
 
         body {
@@ -34,6 +35,7 @@
             border-radius: 8px;
             margin: 1.5em 0;
             font-family: 'IBM Plex Mono', monospace;
+            padding-top: 2.5rem;
         }
 
         code[class*="language-"] {
@@ -76,12 +78,13 @@
 
         .language-label {
             position: absolute;
-            top: 0.5rem;
+            top: 0.75rem;
             left: 1rem;
-            font-size: 0.8rem;
-            color: #888888;
+            font-size: 0.75rem;
+            color: var(--text-muted);
             font-family: 'IBM Plex Sans', sans-serif;
-            z-index: 10;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
         }
 
         .nav-tabs .nav-link {
@@ -121,8 +124,13 @@
         }
 
         h1, h5, h6 {
-            font-weight: 600;
+            font-weight: 500;
             color: var(--text-primary);
+            margin-bottom: 1.5rem;
+        }
+
+        .text-muted {
+            color: var(--text-muted) !important;
         }
 
         .form-control {
