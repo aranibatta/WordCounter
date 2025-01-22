@@ -7,7 +7,66 @@
     <link href="https://cdn.replit.com/agent/bootstrap-agent-dark-theme.min.css" rel="stylesheet">
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.7.2/font/bootstrap-icons.css">
+    <!-- Add Prism.js CSS and JS -->
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/themes/prism-tomorrow.min.css" rel="stylesheet">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/plugins/toolbar/prism-toolbar.min.css" rel="stylesheet">
     <style>
+        /* Theme overrides for Prism */
+        :root {
+            --prism-background: var(--bs-body-bg);
+            --prism-color: var(--bs-body-color);
+        }
+
+        pre[class*="language-"] {
+            background: var(--prism-background);
+            border: 1px solid var(--bs-border-color);
+            margin: 1em 0;
+        }
+
+        code[class*="language-"] {
+            text-shadow: none;
+            color: var(--prism-color);
+        }
+
+        .token.comment { color: var(--bs-secondary); }
+        .token.string { color: var(--bs-success); }
+        .token.number { color: var(--bs-warning); }
+        .token.keyword { color: var(--bs-primary); }
+        .token.function { color: var(--bs-info); }
+        .token.operator { color: var(--bs-light); }
+
+        .code-toolbar {
+            position: relative;
+        }
+
+        .code-toolbar > .toolbar {
+            opacity: 1;
+            top: 0.3em;
+            right: 0.3em;
+        }
+
+        .code-toolbar > .toolbar > .toolbar-item > button {
+            background: var(--bs-secondary-bg);
+            color: var(--bs-body-color);
+            border: 1px solid var(--bs-border-color);
+            border-radius: 0.375rem;
+            padding: 0.25rem 0.5rem;
+            font-size: 0.875rem;
+        }
+
+        .code-toolbar > .toolbar > .toolbar-item > button:hover {
+            background: var(--bs-secondary);
+            color: var(--bs-white);
+        }
+
+        .language-label {
+            position: absolute;
+            top: 0.5rem;
+            left: 1rem;
+            font-size: 0.8rem;
+            color: var(--bs-secondary);
+            z-index: 10;
+        }
         .json-key { color: var(--bs-primary); }
         .json-string { color: var(--bs-success); }
         .json-number { color: var(--bs-warning); }
@@ -35,13 +94,7 @@
             right: 10px;
             cursor: pointer;
         }
-        .language-label {
-            position: absolute;
-            top: 10px;
-            left: 10px;
-            font-size: 0.8rem;
-            color: var(--bs-secondary);
-        }
+
     </style>
 </head>
 <body>
@@ -120,61 +173,58 @@
 
                         <div class="code-snippet">
                             <span class="language-label">cURL</span>
-                            <pre class="mb-0">
-<span class="comment"># Example analyzing a Shakespeare quote</span>
-<span class="shell-command">curl</span> <span class="shell-param">-X POST</span> http://localhost:5000/api/count-chars \
-<span class="shell-param">-H</span> <span class="string">"Content-Type: application/json"</span> \
-<span class="shell-param">-d</span> <span class="string">'{
+                            <pre><code class="language-bash"># Example analyzing a Shakespeare quote
+curl -X POST http://localhost:5000/api/count-chars \
+-H "Content-Type: application/json" \
+-d '{
     "text": "To be, or not to be, that is the question"
-}'</span></pre>
+}'</code></pre>
                         </div>
 
                         <div class="code-snippet">
                             <span class="language-label">Python</span>
-                            <pre class="mb-0">
-<span class="keyword">import</span> <span class="python-builtin">requests</span>
+                            <pre><code class="language-python">import requests
 
-<span class="comment"># Example: Analyze text from a string</span>
-<span class="variable">text</span> = <span class="string">"""
+# Example: Analyze text from a string
+text = """
 In programming we often say:
 Hello, World! Hello, Python! Hello, Programming!
-"""</span>
+"""
 
-<span class="variable">response</span> = <span class="python-builtin">requests</span>.<span class="function">post</span>(
-    <span class="string">'http://localhost:5000/api/count-chars'</span>,
-    <span class="variable">json</span>={<span class="string">'text'</span>: <span class="variable">text</span>}
+response = requests.post(
+    'http://localhost:5000/api/count-chars',
+    json={'text': text}
 )
 
-<span class="keyword">if</span> <span class="variable">response</span>.<span class="variable">ok</span>:
-    <span class="variable">result</span> = <span class="variable">response</span>.<span class="function">json</span>()
-    <span class="python-builtin">print</span>(<span class="string">"Word Frequencies:"</span>)
-    <span class="keyword">for</span> <span class="variable">word</span>, <span class="variable">count</span> <span class="keyword">in</span> <span class="variable">result</span>[<span class="string">'counts'</span>].<span class="function">items</span>():
-        <span class="python-builtin">print</span>(<span class="function">f</span><span class="string">"'{word}': {count} times"</span>)
-    <span class="python-builtin">print</span>(<span class="function">f</span><span class="string">"\nTotal words: {result['total_length']}"</span>)</pre>
+if response.ok:
+    result = response.json()
+    print("Word Frequencies:")
+    for word, count in result['counts'].items():
+        print(f"'{word}': {count} times")
+    print(f"\nTotal words: {result['total_length']}")</code></pre>
                         </div>
 
                         <div class="code-snippet">
                             <span class="language-label">JavaScript</span>
-                            <pre class="mb-0">
-<span class="comment">// Example: Analyze a paragraph</span>
-<span class="keyword">const</span> <span class="variable">text</span> = <span class="string">`
+                            <pre><code class="language-javascript">// Example: Analyze a paragraph
+const text = `
 The quick brown fox jumps over the lazy dog.
 The lazy dog sleeps while the quick fox runs.
-`</span>;
+`;
 
-<span class="function">fetch</span>(<span class="string">'http://localhost:5000/api/count-chars'</span>, {
-    <span class="variable">method</span>: <span class="string">'POST'</span>,
-    <span class="variable">headers</span>: {
-        <span class="string">'Content-Type'</span>: <span class="string">'application/json'</span>,
+fetch('http://localhost:5000/api/count-chars', {
+    method: 'POST',
+    headers: {
+        'Content-Type': 'application/json',
     },
-    <span class="variable">body</span>: <span class="function">JSON.stringify</span>({ <span class="variable">text</span> })
+    body: JSON.stringify({ text })
 })
-.<span class="function">then</span>(<span class="variable">response</span> => <span class="variable">response</span>.<span class="function">json</span>())
-.<span class="function">then</span>(<span class="variable">data</span> => {
-    <span class="function">console.log</span>(<span class="string">'Word Frequencies:'</span>, <span class="variable">data</span>.<span class="variable">counts</span>);
-    <span class="function">console.log</span>(<span class="string">'Total Words:'</span>, <span class="variable">data</span>.<span class="variable">total_length</span>);
+.then(response => response.json())
+.then(data => {
+    console.log('Word Frequencies:', data.counts);
+    console.log('Total Words:', data.total_length);
 })
-.<span class="function">catch</span>(<span class="variable">error</span> => <span class="function">console.error</span>(<span class="string">'Error:'</span>, <span class="variable">error</span>));</pre>
+.catch(error => console.error('Error:', error));</code></pre>
                         </div>
 
                         <h6 class="mt-4 mb-3">File Upload Endpoint</h6>
@@ -182,98 +232,98 @@ The lazy dog sleeps while the quick fox runs.
 
                         <div class="code-snippet">
                             <span class="language-label">cURL</span>
-                            <pre class="mb-0">
-<span class="comment"># Upload and analyze a PDF file</span>
-<span class="shell-command">curl</span> <span class="shell-param">-X POST</span> http://localhost:5000/api/count-chars \
-<span class="shell-param">-F</span> <span class="string">"file=@sample.pdf"</span>
+                            <pre class="language-bash mb-0">
+<code class="language-bash"># Upload and analyze a PDF file
+curl -X POST http://localhost:5000/api/count-chars \
+-F "file=@sample.pdf"
 
-<span class="comment"># Upload and analyze a Markdown file</span>
-<span class="shell-command">curl</span> <span class="shell-param">-X POST</span> http://localhost:5000/api/count-chars \
-<span class="shell-param">-F</span> <span class="string">"file=@README.md"</span></pre>
+# Upload and analyze a Markdown file
+curl -X POST http://localhost:5000/api/count-chars \
+-F "file=@README.md"</code></pre>
                         </div>
 
                         <div class="code-snippet">
                             <span class="language-label">Python</span>
-                            <pre class="mb-0">
-<span class="keyword">import</span> <span class="python-builtin">requests</span>
-<span class="keyword">from</span> <span class="python-builtin">pathlib</span> <span class="keyword">import</span> <span class="python-builtin">Path</span>
+                            <pre class="language-python mb-0">
+<code class="language-python">import requests
+from pathlib import Path
 
-<span class="keyword">def</span> <span class="function">analyze_file</span>(<span class="variable">file_path</span>):
-    <span class="comment">"""Analyze word frequency in a file"""</span>
-    <span class="variable">file_path</span> = <span class="python-builtin">Path</span>(<span class="variable">file_path</span>)
+def analyze_file(file_path):
+    """Analyze word frequency in a file"""
+    file_path = Path(file_path)
 
-    <span class="keyword">with</span> <span class="python-builtin">open</span>(<span class="variable">file_path</span>, <span class="string">'rb'</span>) <span class="keyword">as</span> <span class="variable">f</span>:
-        <span class="variable">response</span> = <span class="python-builtin">requests</span>.<span class="function">post</span>(
-            <span class="string">'http://localhost:5000/api/count-chars'</span>,
-            <span class="variable">files</span>={<span class="string">'file'</span>: (<span class="variable">file_path</span>.<span class="variable">name</span>, <span class="variable">f</span>)}
+    with open(file_path, 'rb') as f:
+        response = requests.post(
+            'http://localhost:5000/api/count-chars',
+            files={'file': (file_path.name, f)}
         )
 
-    <span class="keyword">if</span> <span class="variable">response</span>.<span class="variable">ok</span>:
-        <span class="variable">result</span> = <span class="variable">response</span>.<span class="function">json</span>()
-        <span class="python-builtin">print</span>(<span class="function">f</span><span class="string">"\nAnalysis of {file_path.name}:"</span>)
-        <span class="comment"># Get top 10 most frequent words</span>
-        <span class="variable">sorted_words</span> = <span class="python-builtin">sorted</span>(
-            <span class="variable">result</span>[<span class="string">'counts'</span>].<span class="function">items</span>(),
-            <span class="variable">key</span>=<span class="keyword">lambda</span> <span class="variable">x</span>: <span class="variable">x</span>[<span class="number">1</span>],
-            <span class="variable">reverse</span>=<span class="boolean">True</span>
-        )[:<span class="number">10</span>]
+    if response.ok:
+        result = response.json()
+        print(f"\nAnalysis of {file_path.name}:")
+        # Get top 10 most frequent words
+        sorted_words = sorted(
+            result['counts'].items(),
+            key=lambda x: x[1],
+            reverse=True
+        )[:10]
 
-        <span class="python-builtin">print</span>(<span class="string">"\nTop 10 most frequent words:"</span>)
-        <span class="keyword">for</span> <span class="variable">word</span>, <span class="variable">count</span> <span class="keyword">in</span> <span class="variable">sorted_words</span>:
-            <span class="python-builtin">print</span>(<span class="function">f</span><span class="string">"'{word}': {count} times"</span>)
+        print("\nTop 10 most frequent words:")
+        for word, count in sorted_words:
+            print(f"'{word}': {count} times")
 
-        <span class="python-builtin">print</span>(<span class="function">f</span><span class="string">"\nTotal words: {result['total_length']}"</span>)
-    <span class="keyword">else</span>:
-        <span class="python-builtin">print</span>(<span class="function">f</span><span class="string">"Error: {response.json().get('error', 'Unknown error')}"</span>)
+        print(f"\nTotal words: {result['total_length']}")
+    else:
+        print(f"Error: {response.json().get('error', 'Unknown error')}")
 
-<span class="comment"># Example usage</span>
-<span class="function">analyze_file</span>(<span class="string">'document.pdf'</span>)
-<span class="function">analyze_file</span>(<span class="string">'notes.md'</span>)</pre>
+# Example usage
+analyze_file('document.pdf')
+analyze_file('notes.md')</code></pre>
                         </div>
 
                         <div class="code-snippet">
                             <span class="language-label">JavaScript</span>
-                            <pre class="mb-0">
-<span class="comment">// Example: File upload from an HTML form</span>
-<span class="keyword">const</span> <span class="function">analyzeFile</span> = <span class="keyword">async</span> (<span class="variable">fileInput</span>) => {
-    <span class="keyword">const</span> <span class="variable">file</span> = <span class="variable">fileInput</span>.<span class="variable">files</span>[<span class="number">0</span>];
-    <span class="keyword">if</span> (!<span class="variable">file</span>) {
-        <span class="function">console.error</span>(<span class="string">'No file selected'</span>);
-        <span class="keyword">return</span>;
+                            <pre class="language-javascript mb-0">
+<code class="language-javascript">// Example: File upload from an HTML form
+const analyzeFile = async (fileInput) => {
+    const file = fileInput.files[0];
+    if (!file) {
+        console.error('No file selected');
+        return;
     }
 
-    <span class="keyword">const</span> <span class="variable">formData</span> = <span class="keyword">new</span> <span class="function">FormData</span>();
-    <span class="variable">formData</span>.<span class="function">append</span>(<span class="string">'file'</span>, <span class="variable">file</span>);
+    const formData = new FormData();
+    formData.append('file', file);
 
-    <span class="keyword">try</span> {
-        <span class="keyword">const</span> <span class="variable">response</span> = <span class="keyword">await</span> <span class="function">fetch</span>(<span class="string">'/api/count-chars'</span>, {
-            <span class="variable">method</span>: <span class="string">'POST'</span>,
-            <span class="variable">body</span>: <span class="variable">formData</span>
+    try {
+        const response = await fetch('/api/count-chars', {
+            method: 'POST',
+            body: formData
         });
 
-        <span class="keyword">const</span> <span class="variable">data</span> = <span class="keyword">await</span> <span class="variable">response</span>.<span class="function">json</span>();
+        const data = await response.json();
 
-        <span class="keyword">if</span> (<span class="variable">response</span>.<span class="variable">ok</span>) {
-            <span class="function">console.log</span>(<span class="function">`Analysis of ${file.name}:`</span>);
-            <span class="function">console.log</span>(<span class="string">'Word Frequencies:'</span>, <span class="variable">data</span>.<span class="variable">counts</span>);
-            <span class="function">console.log</span>(<span class="string">'Total Words:'</span>, <span class="variable">data</span>.<span class="variable">total_length</span>);
+        if (response.ok) {
+            console.log(`Analysis of ${file.name}:`);
+            console.log('Word Frequencies:', data.counts);
+            console.log('Total Words:', data.total_length);
 
-            <span class="comment">// Get top 10 most frequent words</span>
-            <span class="keyword">const</span> <span class="variable">sortedWords</span> = <span class="function">Object.entries</span>(<span class="variable">data</span>.<span class="variable">counts</span>)
-                .<span class="function">sort</span>(([,<span class="variable">a</span>], [,<span class="variable">b</span>]) => <span class="variable">b</span> - <span class="variable">a</span>)
-                .<span class="function">slice</span>(<span class="number">0</span>, <span class="number">10</span>);
+            // Get top 10 most frequent words
+            const sortedWords = Object.entries(data.counts)
+                .sort(([,a], [,b]) => b - a)
+                .slice(0, 10);
 
-            <span class="function">console.log</span>(<span class="string">'\nTop 10 most frequent words:'</span>);
-            <span class="variable">sortedWords</span>.<span class="function">forEach</span>(([,<span class="variable">word</span>, <span class="variable">count</span>]) => {
-                <span class="function">console.log</span>(<span class="function">`'${word}': ${count} times`</span>);
+            console.log('\nTop 10 most frequent words:');
+            sortedWords.forEach(([,word, count]) => {
+                console.log(`'${word}': ${count} times`);
             });
-        } <span class="keyword">else</span> {
-            <span class="keyword">throw</span> <span class="keyword">new</span> <span class="function">Error</span>(<span class="variable">data</span>.<span class="variable">error</span> || <span class="string">'Failed to analyze file'</span>);
+        } else {
+            throw new Error(data.error || 'Failed to analyze file');
         }
-    } <span class="keyword">catch</span> (<span class="variable">error</span>) {
-        <span class="function">console.error</span>(<span class="string">'Error:'</span>, <span class="variable">error</span>.<span class="variable">message</span>);
+    } catch (error) {
+        console.error('Error:', error.message);
     }
-};</pre>
+};</code></pre>
                         </div>
 
                         <h6 class="mt-4 mb-3">Response Format</h6>
@@ -287,6 +337,12 @@ The lazy dog sleeps while the quick fox runs.
     </div>
 
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <!-- Add Prism.js and its plugins -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/prism.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/plugins/toolbar/prism-toolbar.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/components/prism-python.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/components/prism-javascript.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/components/prism-bash.min.js"></script>
     <script>
         let chart = null;
 
@@ -383,6 +439,24 @@ The lazy dog sleeps while the quick fox runs.
             });
         }
 
+        // Add copy to clipboard button to code blocks
+        Prism.plugins.toolbar.registerButton('copy-to-clipboard', function(env) {
+            const button = document.createElement('button');
+            button.innerHTML = '<i class="bi bi-clipboard"></i> Copy';
+
+            button.addEventListener('click', function() {
+                const code = env.element.textContent;
+                navigator.clipboard.writeText(code).then(function() {
+                    button.innerHTML = '<i class="bi bi-check"></i> Copied!';
+                    setTimeout(function() {
+                        button.innerHTML = '<i class="bi bi-clipboard"></i> Copy';
+                    }, 2000);
+                });
+            });
+
+            return button;
+        });
+
         async function analyzeInput() {
             const resultElement = document.getElementById('result');
             const resultsSection = document.getElementById('resultsSection');
@@ -442,6 +516,10 @@ The lazy dog sleeps while the quick fox runs.
                 visualizationSection.style.display = 'none';
             }
         }
+        // Initialize Prism highlighting
+        document.addEventListener('DOMContentLoaded', function() {
+            Prism.highlightAll();
+        });
     </script>
 </body>
 </html>
