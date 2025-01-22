@@ -15,11 +15,11 @@
     <style>
         :root {
             --site-bg-color: #FBFAE9;
-            --text-primary: #1A1A1A;
+            --text-primary: #000000;
             --link-color: #F47B54;
             --link-hover: #D35A34;
             --code-bg: #2D2D2D;
-            --heading-color: #222222;
+            --heading-color: #000000;
         }
 
         body {
@@ -147,6 +147,7 @@
             background-color: white;
             border: 1px solid #DDD;
             border-radius: 4px;
+            color: var(--text-primary); /* Inherited color */
         }
 
         .form-control:focus {
@@ -166,7 +167,7 @@
             border-radius: 4px;
             padding: 0.5rem 1rem;
             font-family: 'IBM Plex Sans', sans-serif;
-            color: var(--text-primary);
+            color: var(--text-primary); /* Inherited color */
             cursor: pointer;
             transition: all 0.2s ease;
         }
@@ -184,6 +185,16 @@
         .language-selector {
             margin-bottom: 1rem;
             max-width: 200px;
+        }
+
+        /* Form inputs and text areas should inherit the text color */
+        .form-control, 
+        .form-select,
+        .nav-tabs .nav-link,
+        p,
+        label,
+        .card-title {
+            color: var(--text-primary);
         }
     </style>
 </head>
