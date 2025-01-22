@@ -9,22 +9,22 @@ CORS(app)  # Enable CORS for all routes
 @app.route('/api/count-chars', methods=['POST'])
 def count_characters():
     """
-    API endpoint to count character occurrences in a string.
-    
+    API endpoint to count word occurrences in a string.
+
     Expected JSON Request Format:
     {
         "text": "string to analyze"
     }
-    
+
     Returns JSON Response:
     {
         "counts": {
-            "character": count,
+            "word": count,
             ...
         },
         "total_length": integer
     }
-    
+
     Error Response:
     {
         "error": "error message"
@@ -33,32 +33,36 @@ def count_characters():
     try:
         # Get JSON data from request
         data = request.get_json()
-        
+
         # Validate input
         if not data or 'text' not in data:
             return jsonify({'error': 'No text provided. Please send JSON with "text" field'}), 400
-            
+
         input_text = data['text']
-        
+
         # Validate input type
         if not isinstance(input_text, str):
             return jsonify({'error': 'Text must be a string'}), 400
-            
-        # Count character occurrences
-        char_counts = {}
-        for char in input_text:
-            char_counts[char] = char_counts.get(char, 0) + 1
-            
+
+        # Count word occurrences
+        words = input_text.lower().split()
+        word_counts = {}
+        for word in words:
+            # Remove common punctuation from words
+            word = word.strip('.,!?()[]{}":;')
+            if word:  # Only count non-empty strings
+                word_counts[word] = word_counts.get(word, 0) + 1
+
         # Prepare response
         response = {
-            'counts': char_counts,
-            'total_length': len(input_text)
+            'counts': word_counts,
+            'total_length': len(words)
         }
-        
-        logging.debug(f"Processed string of length {len(input_text)} with {len(char_counts)} unique characters")
-        
+
+        logging.debug(f"Processed text with {len(words)} words and {len(word_counts)} unique words")
+
         return jsonify(response), 200
-        
+
     except Exception as e:
         logging.error(f"Error processing request: {str(e)}")
         return jsonify({'error': 'Internal server error'}), 500

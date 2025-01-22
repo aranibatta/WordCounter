@@ -3,13 +3,13 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Character Counter API</title>
+    <title>Word Counter API</title>
     <link href="https://cdn.replit.com/agent/bootstrap-agent-dark-theme.min.css" rel="stylesheet">
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 </head>
 <body>
     <div class="container mt-5">
-        <h1 class="mb-4">Character Counter API</h1>
+        <h1 class="mb-4">Word Counter API</h1>
 
         <div class="card mb-4">
             <div class="card-body">
@@ -24,7 +24,7 @@
                 <h6 class="mb-2 mt-3">Response Format:</h6>
                 <pre class="bg-dark text-light p-3 rounded"><code>{
     "counts": {
-        "character": count,
+        "word": count,
         ...
     },
     "total_length": integer
@@ -37,7 +37,7 @@
                 <h5 class="card-title">Try it out</h5>
                 <div class="mb-3">
                     <label for="inputText" class="form-label">Enter text to analyze:</label>
-                    <textarea class="form-control" id="inputText" rows="3"></textarea>
+                    <textarea class="form-control" id="inputText" rows="3" placeholder="Enter some text here..."></textarea>
                 </div>
                 <button class="btn btn-secondary" onclick="analyzeText()">Analyze</button>
 
@@ -50,7 +50,7 @@
 
         <div class="card">
             <div class="card-body">
-                <h5 class="card-title">Character Frequency Visualization</h5>
+                <h5 class="card-title">Word Frequency Visualization</h5>
                 <div class="chart-container" style="position: relative; height:400px; width:100%">
                     <canvas id="freqChart"></canvas>
                 </div>
@@ -72,7 +72,7 @@
                 data: {
                     labels: labels,
                     datasets: [{
-                        label: 'Character Frequency',
+                        label: 'Word Frequency',
                         data: data,
                         backgroundColor: 'rgba(var(--bs-info-rgb), 0.5)',
                         borderColor: 'rgba(var(--bs-info-rgb), 1)',
@@ -82,12 +82,26 @@
                 options: {
                     responsive: true,
                     maintainAspectRatio: false,
+                    indexAxis: 'y',  // Make it a horizontal bar chart for better word readability
                     scales: {
                         y: {
                             beginAtZero: true,
                             ticks: {
+                                autoSkip: false,  // Show all word labels
+                                maxRotation: 0,
+                                minRotation: 0
+                            }
+                        },
+                        x: {
+                            beginAtZero: true,
+                            ticks: {
                                 stepSize: 1
                             }
+                        }
+                    },
+                    plugins: {
+                        legend: {
+                            display: false  // Hide legend as it's not needed
                         }
                     }
                 }
@@ -112,8 +126,12 @@
 
                 // Prepare data for chart
                 const counts = data.counts;
-                const labels = Object.keys(counts);
-                const frequencies = Object.values(counts);
+                // Sort words by frequency in descending order
+                const sortedWords = Object.entries(counts)
+                    .sort(([,a], [,b]) => b - a)
+                    .slice(0, 20);  // Show top 20 words
+                const labels = sortedWords.map(([word]) => word);
+                const frequencies = sortedWords.map(([,count]) => count);
 
                 // Create or update chart
                 createChart(labels, frequencies);
