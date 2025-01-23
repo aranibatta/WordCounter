@@ -1,5 +1,5 @@
 import os
-from flask import Flask, request, jsonify, send_from_directory, redirect, url_for
+from flask import Flask, request, jsonify, send_from_directory, redirect, url_for, send_file
 from flask_cors import CORS
 import logging
 import re
@@ -10,6 +10,7 @@ import secrets
 from shutil import copyfile
 from models import Analysis
 from app import app, db
+import io
 
 # Initialize Flask app
 CORS(app)  # Enable CORS for all routes
@@ -52,68 +53,33 @@ def clean_extra_whitespace(text):
 
 def process_file_content(file):
     filename = secure_filename(file.filename)
-    file_path = os.path.join(app.config['UPLOAD_FOLDER'], filename)
+    file_extension = filename.rsplit('.', 1)[1].lower()
+
+    # Generate a unique filename to store
+    stored_filename = f"{secrets.token_urlsafe(8)}.{file_extension}"
+    file_path = os.path.join(app.config['UPLOAD_FOLDER'], stored_filename)
     file.save(file_path)
 
     content = ""
-    file_ext = filename.rsplit('.', 1)[1].lower()
-
     try:
-        if file_ext == 'pdf':
+        if file_extension == 'pdf':
             reader = PdfReader(file_path)
             text_blocks = []
 
             for page in reader.pages:
                 # Extract text from page
                 text = page.extract_text()
-
-                # Process hyphenated words
                 text = join_hyphenated_words(text)
-
-                # Handle bullet points and numbered lists
                 text = handle_bullet_points(text)
+                text_blocks.append(text)
 
-                # Split into lines and preserve intentional breaks
-                lines = text.split('\n')
-                cleaned_lines = []
-
-                current_paragraph = []
-                for line in lines:
-                    # Remove excessive spaces while preserving word boundaries
-                    cleaned_line = ' '.join(word for word in line.split() if word)
-
-                    if cleaned_line:
-                        # Check if this line is a continuation of the previous line
-                        if (cleaned_line[0].islower() and current_paragraph 
-                            and not cleaned_line.startswith(('•', '1.', '2.', '3.', '4.', '5.', '6.', '7.', '8.', '9.'))):
-                            current_paragraph.append(cleaned_line)
-                        else:
-                            # If we have a paragraph built up, add it to cleaned_lines
-                            if current_paragraph:
-                                cleaned_lines.append(' '.join(current_paragraph))
-                                current_paragraph = []
-                            # Start a new paragraph
-                            current_paragraph.append(cleaned_line)
-
-                # Add any remaining paragraph
-                if current_paragraph:
-                    cleaned_lines.append(' '.join(current_paragraph))
-
-                # Join the cleaned lines into a single block of text
-                if cleaned_lines:
-                    text_blocks.append('\n'.join(cleaned_lines))
-
-            # Join blocks with double newlines for paragraph separation
             raw_content = '\n\n'.join(text_blocks)
-            # Final cleanup of whitespace
             content = clean_extra_whitespace(raw_content)
 
-        elif file_ext == 'md':
+        elif file_extension == 'md':
             with open(file_path, 'r', encoding='utf-8') as f:
                 md_content = f.read()
-                # Convert markdown to plain text by first converting to HTML
                 html = markdown.markdown(md_content)
-                # Remove HTML tags (simple approach)
                 content = re.sub(r'<[^>]+>', ' ', html)
                 content = clean_extra_whitespace(content)
         else:  # txt files
@@ -121,8 +87,7 @@ def process_file_content(file):
                 content = f.read()
                 content = clean_extra_whitespace(content)
 
-        os.remove(file_path)  # Clean up uploaded file
-        return content
+        return content, stored_filename
     except Exception as e:
         if os.path.exists(file_path):
             os.remove(file_path)
@@ -148,10 +113,14 @@ def clean_word(word):
 def count_characters():
     try:
         text = None
+        stored_filename = None
+        original_filename = None
+
         if 'file' in request.files:
             file = request.files['file']
             if file and allowed_file(file.filename):
-                text = process_file_content(file)
+                text, stored_filename = process_file_content(file)
+                original_filename = secure_filename(file.filename)
             else:
                 return jsonify({'error': 'Invalid file type. Allowed types: PDF, MD, TXT'}), 400
         else:
@@ -161,7 +130,7 @@ def count_characters():
             text = data['text']
 
         if not isinstance(text, str):
-            return jsonify({'error': 'Text must be a string'}), 400
+            return jsonify({'error': 'Text must be a string'}), 404
 
         # Process text and get word counts
         words = text.split()
@@ -186,7 +155,9 @@ def count_characters():
         analysis = Analysis(
             share_id=share_id,
             content=text,
-            results=results
+            results=results,
+            stored_filename=stored_filename,
+            original_filename=original_filename
         )
         db.session.add(analysis)
         db.session.commit()
@@ -194,12 +165,49 @@ def count_characters():
         # Add share URL to response
         results['share_url'] = url_for('get_analysis', share_id=share_id, _external=True)
 
+        # Add download URL if there's content
+        if stored_filename:
+            results['download_url'] = url_for('download_file', share_id=share_id, _external=True)
+        else:
+            results['download_url'] = url_for('download_text', share_id=share_id, _external=True)
+
         logging.debug(f"Processed text with {len(valid_words)} words and {len(word_counts)} unique words")
         return jsonify(results), 200
 
     except Exception as e:
         logging.error(f"Error processing request: {str(e)}")
         return jsonify({'error': 'Internal server error'}), 500
+
+@app.route('/download/<share_id>')
+def download_file(share_id):
+    """Download the original uploaded file"""
+    analysis = Analysis.query.filter_by(share_id=share_id).first()
+    if not analysis:
+        return jsonify({'error': 'Analysis not found'}), 404
+
+    if analysis.stored_filename:
+        file_path = os.path.join(app.config['UPLOAD_FOLDER'], analysis.stored_filename)
+        if os.path.exists(file_path):
+            return send_file(
+                file_path,
+                as_attachment=True,
+                download_name=analysis.original_filename or analysis.stored_filename
+            )
+    return jsonify({'error': 'File not found'}), 404
+
+@app.route('/download/text/<share_id>')
+def download_text(share_id):
+    """Download the text content as a .txt file"""
+    analysis = Analysis.query.filter_by(share_id=share_id).first()
+    if not analysis:
+        return jsonify({'error': 'Analysis not found'}), 404
+
+    return send_file(
+        io.BytesIO(analysis.content.encode('utf-8')),
+        mimetype='text/plain',
+        as_attachment=True,
+        download_name=f'analysis_{share_id}.txt'
+    )
 
 @app.route('/analysis/<share_id>')
 def get_analysis(share_id):

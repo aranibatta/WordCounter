@@ -325,7 +325,12 @@
                                 </div>
                             </div>
                         </div>
-                        <button class="btn btn-secondary" onclick="analyzeInput()">Analyze</button>
+                        <div class="d-flex gap-2">
+                            <button class="btn btn-secondary" onclick="analyzeInput()">Analyze</button>
+                            <button id="downloadBtn" class="btn btn-outline-secondary" onclick="downloadContent()" style="display: none;">
+                                <i class="bi bi-download"></i> Download
+                            </button>
+                        </div>
 
                         <div class="card mt-3" id="visualizationSection" style="display: none;">
                             <div class="card-body">
@@ -622,6 +627,7 @@ const analyzeFile = async (fileInput) => {
             const resultElement = document.getElementById('result');
             const resultsSection = document.getElementById('resultsSection');
             const visualizationSection = document.getElementById('visualizationSection');
+            const downloadBtn = document.getElementById('downloadBtn');
 
             // Remove any existing share alerts
             const existingAlert = resultsSection.querySelector('.alert');
@@ -638,6 +644,14 @@ const analyzeFile = async (fileInput) => {
             // Show results sections
             resultsSection.style.display = 'block';
             visualizationSection.style.display = 'block';
+
+            // Show download button if there's a download URL
+            if (data.download_url) {
+                downloadBtn.style.display = 'inline-block';
+                downloadBtn.setAttribute('data-url', data.download_url);
+            } else {
+                downloadBtn.style.display = 'none';
+            }
 
             // Create visualization
             const sortedWords = Object.entries(data.counts)
@@ -837,8 +851,7 @@ const analyzeFile = async (fileInput) => {
             dragDropZone.addEventListener('drop', handleDrop, false);
 
             function preventDefaults(e) {
-                e.preventDefault();
-                e.stopPropagation();
+                e.preventDefault();                e.stopPropagation();
             }
 
             function highlight(e) {
@@ -873,6 +886,32 @@ const analyzeFile = async (fileInput) => {
             });
             document.querySelector(`.${exampleClass} > .code-example[data-language="${language}"]`).classList.add('active');
         }
+
+        function downloadContent() {
+            const downloadBtn = document.getElementById('downloadBtn');
+            const downloadUrl = downloadBtn.getAttribute('data-url');
+            if (downloadUrl) {
+                window.location.href = downloadUrl;
+            }
+        }
+
+        function copyResult() {
+            const codeElement = document.getElementById('result');
+            const textToCopy = codeElement.textContent;
+            navigator.clipboard.writeText(textToCopy)
+                .then(() => {
+                    // Show success message
+                    const copyButton = document.querySelector('.copy-button');
+                    copyButton.innerHTML = '<i class="bi bi-check"></i> Copied!';
+                    setTimeout(() => {
+                        copyButton.innerHTML = '<i class="bi bi-clipboard"></i> Copy';
+                    }, 2000);
+                })
+                .catch(err => {
+                    console.error('Failed to copy: ', err);
+                });
+        }
+
 
         // Initialize everything when the document is loaded
         document.addEventListener('DOMContentLoaded', function() {
