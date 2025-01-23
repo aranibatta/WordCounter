@@ -146,7 +146,6 @@ def count_characters():
     """
     API endpoint to count word occurrences in a string or uploaded file.
     Ignores numbers, special characters, and URLs.
-    Returns counts sorted by frequency in descending order.
     """
     try:
         if 'file' in request.files:
@@ -178,12 +177,9 @@ def count_characters():
                     valid_words.append(cleaned_word)
                     word_counts[cleaned_word] = word_counts.get(cleaned_word, 0) + 1
 
-        # Sort word_counts by frequency in descending order
-        sorted_counts = dict(sorted(word_counts.items(), key=lambda x: x[1], reverse=True))
-
-        # Prepare response with sorted counts
+        # Prepare response
         response = {
-            'counts': sorted_counts,
+            'counts': word_counts,
             'total_length': len(valid_words)
         }
 
