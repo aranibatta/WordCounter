@@ -23,6 +23,30 @@ app.config['UPLOAD_FOLDER'] = UPLOAD_FOLDER
 def allowed_file(filename):
     return '.' in filename and filename.rsplit('.', 1)[1].lower() in ALLOWED_EXTENSIONS
 
+def join_hyphenated_words(text):
+    """Join words that have been split with hyphens at line breaks."""
+    # Pattern for hyphenated words at line breaks
+    pattern = r'(\w+)-\n\s*(\w+)'
+    # Join the words, removing the hyphen and line break
+    return re.sub(pattern, r'\1\2', text)
+
+def handle_bullet_points(text):
+    """Properly format bullet points and numbered lists."""
+    # Add space after bullet points and numbers
+    text = re.sub(r'(^|\n)[\u2022\u2023\u2043\u2219]\s*', r'\1• ', text)
+    text = re.sub(r'(^|\n)\d+\.\s*', lambda m: f'\n{m.group().strip()} ', text)
+    return text
+
+def clean_extra_whitespace(text):
+    """Clean up extra whitespace while preserving intentional line breaks."""
+    # Replace multiple spaces with single space
+    text = re.sub(r' +', ' ', text)
+    # Remove spaces at the beginning of lines
+    text = re.sub(r'\n\s+', '\n', text)
+    # Remove multiple consecutive empty lines
+    text = re.sub(r'\n{3,}', '\n\n', text)
+    return text.strip()
+
 def process_file_content(file):
     filename = secure_filename(file.filename)
     file_path = os.path.join(app.config['UPLOAD_FOLDER'], filename)
@@ -35,31 +59,64 @@ def process_file_content(file):
         if file_ext == 'pdf':
             reader = PdfReader(file_path)
             text_blocks = []
+
             for page in reader.pages:
                 # Extract text from page
                 text = page.extract_text()
-                # Clean up text while preserving word boundaries
+
+                # Process hyphenated words
+                text = join_hyphenated_words(text)
+
+                # Handle bullet points and numbered lists
+                text = handle_bullet_points(text)
+
+                # Split into lines while preserving intentional breaks
                 lines = text.split('\n')
                 cleaned_lines = []
+
+                current_paragraph = []
                 for line in lines:
                     # Remove excessive spaces while preserving word boundaries
                     cleaned_line = ' '.join(word for word in line.split() if word)
+
                     if cleaned_line:
-                        cleaned_lines.append(cleaned_line)
-                # Join lines with proper spacing
-                text_blocks.append(' '.join(cleaned_lines))
+                        # Check if this line is a continuation of the previous line
+                        if (cleaned_line[0].islower() and current_paragraph 
+                            and not cleaned_line.startswith(('•', '1.', '2.', '3.', '4.', '5.', '6.', '7.', '8.', '9.'))):
+                            current_paragraph.append(cleaned_line)
+                        else:
+                            # If we have a paragraph built up, add it to cleaned_lines
+                            if current_paragraph:
+                                cleaned_lines.append(' '.join(current_paragraph))
+                                current_paragraph = []
+                            # Start a new paragraph
+                            current_paragraph.append(cleaned_line)
+
+                # Add any remaining paragraph
+                if current_paragraph:
+                    cleaned_lines.append(' '.join(current_paragraph))
+
+                # Join the cleaned lines into a single block of text
+                if cleaned_lines:
+                    text_blocks.append('\n'.join(cleaned_lines))
+
             # Join blocks with double newlines for paragraph separation
-            content = '\n\n'.join(text_blocks)
+            raw_content = '\n\n'.join(text_blocks)
+            # Final cleanup of whitespace
+            content = clean_extra_whitespace(raw_content)
+
         elif file_ext == 'md':
             with open(file_path, 'r', encoding='utf-8') as f:
                 md_content = f.read()
                 # Convert markdown to plain text by first converting to HTML
                 html = markdown.markdown(md_content)
                 # Remove HTML tags (simple approach)
-                content = html.replace('<p>', '').replace('</p>', '\n')
+                content = re.sub(r'<[^>]+>', ' ', html)
+                content = clean_extra_whitespace(content)
         else:  # txt files
             with open(file_path, 'r', encoding='utf-8') as f:
                 content = f.read()
+                content = clean_extra_whitespace(content)
 
         os.remove(file_path)  # Clean up uploaded file
         return content
