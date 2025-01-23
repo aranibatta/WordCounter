@@ -331,42 +331,11 @@
                                 <div class="chart-container" style="position: relative; height:400px; width:100%">
                                     <canvas id="freqChart"></canvas>
                                 </div>
-                                <div class="mt-3 text-center">
-                                    <button class="btn btn-secondary" id="downloadInfographic" onclick="generateInfographic()" style="display: none;">
-                                        <i class="bi bi-download"></i> Download Infographic
-                                    </button>
-                                </div>
                             </div>
                         </div>
 
                         <div class="mt-3" id="resultsSection" style="display: none;">
-                            <h6>Analysis Results:</h6>
-                            <div class="card mb-3">
-                                <div class="card-body">
-                                    <h6 class="card-title">Sentiment Analysis</h6>
-                                    <div id="sentimentResult">
-                                        <div class="d-flex justify-content-between align-items-center mb-2">
-                                            <span>Overall Sentiment:</span>
-                                            <span id="overallSentiment" class="badge"></span>
-                                        </div>
-                                        <div class="progress mb-2" style="height: 20px;">
-                                            <div class="progress-bar bg-success" id="positiveScore" role="progressbar" style="width: 0%">
-                                                Positive
-                                            </div>
-                                        </div>
-                                        <div class="progress mb-2" style="height: 20px;">
-                                            <div class="progress-bar bg-warning" id="neutralScore" role="progressbar" style="width: 0%">
-                                                Neutral
-                                            </div>
-                                        </div>
-                                        <div class="progress mb-2" style="height: 20px;">
-                                            <div class="progress-bar bg-danger" id="negativeScore" role="progressbar" style="width: 0%">
-                                                Negative
-                                            </div>
-                                        </div>
-                                    </div>
-                                </div>
-                            </div>
+                            <h6>Result:</h6>
                             <div class="position-relative">
                                 <pre><code class="language-json" id="result">Results will appear here...</code></pre>
                                 <button class="btn btn-sm btn-outline-secondary copy-button" onclick="copyResult()">
@@ -588,7 +557,6 @@ const analyzeFile = async (fileInput) => {
     <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/components/prism-javascript.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/components/prism-bash.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/components/prism-json.min.js"></script>
-
     <script>
         let chart = null;
 
@@ -803,88 +771,92 @@ const analyzeFile = async (fileInput) => {
                     resultsSection.style.display = 'block';
                     visualizationSection.style.display = 'block';
 
-                    // Update sentiment display
-                    const sentimentScores = data.sentiment.scores;
-                    const overallSentiment = data.sentiment.overall_sentiment;
-
-                    // Update sentiment badge
-                    const sentimentBadge = document.getElementById('overallSentiment');
-                    sentimentBadge.textContent = overallSentiment.toUpperCase();
-                    sentimentBadge.className = 'badge ' + 
-                        (overallSentiment === 'positive' ? 'bg-success' : 
-                         overallSentiment === 'negative' ? 'bg-danger' : 'bg-warning');
-
-                    // Update sentiment score bars
-                    document.getElementById('positiveScore').style.width = `${sentimentScores.pos * 100}%`;
-                    document.getElementById('positiveScore').textContent = `Positive ${(sentimentScores.pos * 100).toFixed(1)}%`;
-
-                    document.getElementById('neutralScore').style.width = `${sentimentScores.neu * 100}%`;
-                    document.getElementById('neutralScore').textContent = `Neutral ${(sentimentScores.neu * 100).toFixed(1)}%`;
-
-                    document.getElementById('negativeScore').style.width = `${sentimentScores.neg * 100}%`;
-                    document.getElementById('negativeScore').textContent = `Negative ${(sentimentScores.neg* 100}%`;
-
                     const counts = data.counts;
                     const sortedWords = Object.entries(counts)
                         .sort(([,a], [,b]) => b - a)
-                        .slice(0, 10);
-
+                        .slice(0, 20);
                     const labels = sortedWords.map(([word]) => word);
-                    const values = sortedWords.map(([,count]) => count);
+                    const frequencies = sortedWords.map(([,count]) => count);
 
-                    createChart(labels, values);
-                    document.getElementById('downloadInfographic').style.display = 'inline-block';
+                    createChart(labels, frequencies);
                 } else {
-                    throw new Error(data.error || 'Failed to process text');
+                    throw new Error(data.error || 'Failed to process input');
                 }
             } catch (error) {
                 // Hide progress bar on error
-                if (uploadProgress) {
-                    uploadProgress.style.display = 'none';
-                }
+                uploadProgress.style.display = 'none';
                 resultElement.textContent = 'Error: ' + error.message;
                 resultsSection.style.display = 'block';
                 visualizationSection.style.display = 'none';
             }
         }
+        // Updated switchLanguage function
+        function switchLanguage(language, exampleClass) {
+            document.querySelectorAll(`.${exampleClass} > .code-example`).forEach(el => {
+                el.classList.remove('active');
+            });
+            document.querySelector(`.${exampleClass} > .code-example[data-language="${language}"]`).classList.add('active');
+        }
 
-        // Set up drag and drop functionality
+        // Initialize Prism highlighting
+        document.addEventListener('DOMContentLoaded', function() {
+            Prism.highlightAll();
+        });
+
+
+        // Drag and drop functionality
         function setupDragAndDrop() {
-            const dropZone = document.getElementById('dragDropZone');
+            const dragDropZone = document.getElementById('dragDropZone');
             const fileInput = document.getElementById('inputFile');
 
-            dropZone.addEventListener('click', () => {
+            // Open file dialog when clicking the drag-drop zone
+            dragDropZone.addEventListener('click', () => {
                 fileInput.click();
             });
 
+            // Prevent default drag behaviors
             ['dragenter', 'dragover', 'dragleave', 'drop'].forEach(eventName => {
-                dropZone.addEventListener(eventName, (e) => {
-                    e.preventDefault();
-                    e.stopPropagation();
-                });
+                dragDropZone.addEventListener(eventName, preventDefaults, false);
+                document.body.addEventListener(eventName, preventDefaults, false);
             });
 
+            // Handle drag enter and leave
             ['dragenter', 'dragover'].forEach(eventName => {
-                dropZone.addEventListener(eventName, () => {
-                    dropZone.classList.add('dragover');
-                });
+                dragDropZone.addEventListener(eventName, highlight, false);
             });
 
             ['dragleave', 'drop'].forEach(eventName => {
-                dropZone.addEventListener(eventName, () => {
-                    dropZone.classList.remove('dragover');
-                });
+                dragDropZone.addEventListener(eventName, unhighlight, false);
             });
 
-            dropZone.addEventListener('drop', (e) => {
-                const files = e.dataTransfer.files;
+            // Handle dropped files
+            dragDropZone.addEventListener('drop', handleDrop, false);
+
+            function preventDefaults(e) {
+                e.preventDefault();
+                e.stopPropagation();
+            }
+
+            function highlight(e) {
+                dragDropZone.classList.add('dragover');
+            }
+
+            function unhighlight(e) {
+                dragDropZone.classList.remove('dragover');
+            }
+
+            function handleDrop(e) {
+                const dt = e.dataTransfer;
+                const files = dt.files;
+
                 if (files.length > 0) {
                     fileInput.files = files;
-                    analyzeInput(); // Trigger analysis when file is dropped
+                    // Trigger analysis if a file is dropped
+                    analyzeInput();
                 }
-            });
+            }
 
-            // Also trigger analysis when file is selected through the file input
+            // Update file input change handler
             fileInput.addEventListener('change', () => {
                 if (fileInput.files.length > 0) {
                     analyzeInput();
@@ -892,21 +864,9 @@ const analyzeFile = async (fileInput) => {
             });
         }
 
-        // Language switcher for documentation
-        function switchLanguage(language, examplesClass) {
-            const examples = document.querySelectorAll(`.${examplesClass} .code-example`);
-            examples.forEach(example => {
-                example.classList.remove('active');
-                if (example.getAttribute('data-language') === language) {
-                    example.classList.add('active');
-                }
-            });
-        }
-
-        // Initialize when the document is ready
-        document.addEventListener('DOMContentLoaded', () => {
+        // Initialize drag and drop when the document is loaded
+        document.addEventListener('DOMContentLoaded', function() {
             setupDragAndDrop();
-            Prism.highlightAll();
         });
     </script>
 </body>
