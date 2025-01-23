@@ -1,7 +1,7 @@
+import os
 from flask import Flask, request, jsonify, send_from_directory
 from flask_cors import CORS
 import logging
-import os
 import re
 from werkzeug.utils import secure_filename
 from PyPDF2 import PdfReader
@@ -70,7 +70,7 @@ def process_file_content(file):
                 # Handle bullet points and numbered lists
                 text = handle_bullet_points(text)
 
-                # Split into lines while preserving intentional breaks
+                # Split into lines and preserve intentional breaks
                 lines = text.split('\n')
                 cleaned_lines = []
 
