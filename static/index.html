@@ -562,6 +562,8 @@ const analyzeFile = async (fileInput) => {
     <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/components/prism-javascript.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/components/prism-bash.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/components/prism-json.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+
     <script>
         let chart = null;
 
@@ -875,93 +877,127 @@ const analyzeFile = async (fileInput) => {
         });
     </script>
     <script>
-async function generateInfographic() {
-    const canvas = document.createElement('canvas');
-    canvas.width = 1200;
-    canvas.height = 1600;
-    const ctx = canvas.getContext('2d');
+    async function generateInfographic() {
+        // Initialize jsPDF
+        const { jsPDF } = window.jspdf;
+        const doc = new jsPDF('p', 'pt', 'a4');
+        const pageWidth = doc.internal.pageSize.width;
+        const pageHeight = doc.internal.pageSize.height;
 
-    // Set background
-    ctx.fillStyle = '#FBFAE9';
-    ctx.fillRect(0, 0, canvas.width, canvas.height);
+        // Set background
+        doc.setFillColor(251, 250, 233); // #FBFAE9
+        doc.rect(0, 0, pageWidth, pageHeight, 'F');
 
-    // Add title
-    ctx.fillStyle = '#000000';
-    ctx.font = 'bold 48px "IBM Plex Sans"';
-    ctx.textAlign = 'center';
-    ctx.fillText('Text Analysis Results', canvas.width / 2, 80);
+        // Add title
+        doc.setTextColor(0, 0, 0);
+        doc.setFont('helvetica', 'bold');
+        doc.setFontSize(24);
+        doc.text('Text Analysis Results', pageWidth / 2, 40, { align: 'center' });
 
-    // Add timestamp
-    const date = new Date().toLocaleDateString();
-    ctx.font = '24px "IBM Plex Sans"';
-    ctx.fillText(`Generated on ${date}`, canvas.width / 2, 120);
+        // Add timestamp
+        const date = new Date().toLocaleDateString();
+        doc.setFontSize(12);
+        doc.setFont('helvetica', 'normal');
+        doc.text(`Generated on ${date}`, pageWidth / 2, 60, { align: 'center' });
 
-    // Get the data from the current analysis
-    const rawData = JSON.parse(document.getElementById('result').getAttribute('data-raw'));
-    const totalWords = rawData.total_length;
-    const wordCounts = rawData.counts;
+        // Get the data from the current analysis
+        const rawData = JSON.parse(document.getElementById('result').getAttribute('data-raw'));
+        const totalWords = rawData.total_length;
+        const wordCounts = rawData.counts;
 
-    // Add total word count
-    ctx.font = 'bold 36px "IBM Plex Sans"';
-    ctx.fillText('Total Words Analyzed', canvas.width / 2, 200);
-    ctx.font = 'bold 72px "IBM Plex Sans"';
-    ctx.fillStyle = '#F47B54';
-    ctx.fillText(totalWords, canvas.width / 2, 280);
+        // Add total word count
+        doc.setFontSize(18);
+        doc.setFont('helvetica', 'bold');
+        doc.text('Total Words Analyzed', pageWidth / 2, 100, { align: 'center' });
+        doc.setFontSize(36);
+        doc.setTextColor(244, 123, 84); // #F47B54
+        doc.text(totalWords.toString(), pageWidth / 2, 140, { align: 'center' });
 
-    // Add top words section
-    ctx.fillStyle = '#000000';
-    ctx.font = 'bold 36px "IBM Plex Sans"';
-    ctx.fillText('Most Frequent Words', canvas.width / 2, 400);
+        // Add top words section
+        doc.setTextColor(0, 0, 0);
+        doc.setFontSize(18);
+        doc.text('Most Frequent Words', pageWidth / 2, 200, { align: 'center' });
 
-    // Create bar chart
-    const sortedWords = Object.entries(wordCounts)
-        .sort(([,a], [,b]) => b - a)
-        .slice(0, 10);
+        // Create bar chart
+        const sortedWords = Object.entries(wordCounts)
+            .sort(([,a], [,b]) => b - a)
+            .slice(0, 10);
 
-    const barWidth = 800;
-    const barHeight = 40;
-    const barGap = 20;
-    const startY = 450;
-    const maxCount = Math.max(...sortedWords.map(([,count]) => count));
+        const barWidth = 400;
+        const barHeight = 20;
+        const barGap = 10;
+        const startY = 220;
+        const maxCount = Math.max(...sortedWords.map(([,count]) => count));
 
-    sortedWords.forEach(([word, count], index) => {
-        const y = startY + (barHeight + barGap) * index;
-        const width = (count / maxCount) * barWidth;
+        // Use the same color generation function as the website chart
+        function generateRandomColor() {
+            const hue = Math.floor(Math.random() * 360);
+            return `hsla(${hue}, 70%, 50%, 0.6)`;
+        }
 
-        // Draw bar
-        ctx.fillStyle = '#F47B54';
-        ctx.fillRect((canvas.width - barWidth) / 2, y, width, barHeight);
+        // Convert HSL to RGB for PDF
+        function hslToRgb(h, s, l) {
+            h /= 360;
+            s /= 100;
+            l /= 50;
+            let r, g, b;
+            if (s === 0) {
+                r = g = b = l;
+            } else {
+                const hue2rgb = (p, q, t) => {
+                    if (t < 0) t += 1;
+                    if (t > 1) t -= 1;
+                    if (t < 1/6) return p + (q - p) * 6 * t;
+                    if (t < 1/2) return q;
+                    if (t < 2/3) return p + (q - p) * (2/3 - t) * 6;
+                    return p;
+                };
+                const q = l < 0.5 ? l * (1 + s) : l + s - l * s;
+                const p = 2 * l - q;
+                r = hue2rgb(p, q, h + 1/3);
+                g = hue2rgb(p, q, h);
+                b = hue2rgb(p, q, h - 1/3);
+            }
+            return [Math.round(r * 255), Math.round(g * 255), Math.round(b * 255)];
+        }
 
-        // Add word label
-        ctx.fillStyle = '#000000';
-        ctx.font = '24px "IBM Plex Sans"';
-        ctx.textAlign = 'right';
-        ctx.fillText(word, (canvas.width - barWidth) / 2 - 10, y + barHeight/2 + 8);
+        sortedWords.forEach(([word, count], index) => {
+            const y = startY + (barHeight + barGap) * index;
+            const width = (count / maxCount) * barWidth;
 
-        // Add count label
-        ctx.textAlign = 'left';
-        ctx.fillText(count, (canvas.width - barWidth) / 2 + width + 10, y + barHeight/2 + 8);
-    });
+            // Generate color and convert to RGB
+            const hue = Math.floor(Math.random() * 360);
+            const [r, g, b] = hslToRgb(hue, 70, 25);
 
-    // Add watermark
-    ctx.fillStyle = 'rgba(0,0,0,0.1)';
-    ctx.font = '24px "IBM Plex Sans"';
-    ctx.textAlign = 'center';
-    ctx.fillText('Generated by Word Counter', canvas.width / 2, canvas.height - 40);
+            // Draw bar
+            doc.setFillColor(r, g, b);
+            doc.rect((pageWidth - barWidth) / 2, y, width, barHeight, 'F');
 
-    // Download the infographic
-    const link = document.createElement('a');
-    link.download = 'text-analysis-infographic.png';
-    link.href = canvas.toDataURL('image/png');
-    link.click();
-}
+            // Add word label
+            doc.setFontSize(12);
+            doc.setTextColor(0, 0, 0);
+            doc.setFont('helvetica', 'normal');
+            doc.text(word, (pageWidth - barWidth) / 2 - 5, y + barHeight/2, { align: 'right' });
 
-// Modify analyzeInput function to show download button when analysis is complete
-const originalAnalyzeInput = analyzeInput;
-analyzeInput = async function() {
-    await originalAnalyzeInput.call(this);
-    document.getElementById('downloadInfographic').style.display = 'inline-block';
-};
-</script>
+            // Add count label
+            doc.text(count.toString(), (pageWidth - barWidth) / 2 + width + 5, y + barHeight/2, { align: 'left' });
+        });
+
+        // Add watermark
+        doc.setFontSize(10);
+        doc.setTextColor(200, 200, 200);
+        doc.text('Generated by Word Counter', pageWidth / 2, pageHeight - 20, { align: 'center' });
+
+        // Save the PDF
+        doc.save('text-analysis-report.pdf');
+    }
+
+    // Modify analyzeInput function to show download button when analysis is complete
+    const originalAnalyzeInput = analyzeInput;
+    analyzeInput = async function() {
+        await originalAnalyzeInput.call(this);
+        document.getElementById('downloadInfographic').style.display = 'inline-block';
+    };
+    </script>
 </body>
 </html>
