@@ -38,17 +38,17 @@ def process_file_content(file):
             for page in reader.pages:
                 # Extract text from page
                 text = page.extract_text()
-                # Split into paragraphs
-                paragraphs = text.split('\n\n')
-                # Clean each paragraph
-                cleaned_paragraphs = []
-                for para in paragraphs:
-                    # Remove excessive whitespace while preserving intentional line breaks
-                    cleaned = ' '.join(para.split())
-                    if cleaned:
-                        cleaned_paragraphs.append(cleaned)
-                text_blocks.extend(cleaned_paragraphs)
-            # Join paragraphs with double newlines
+                # Clean up text while preserving word boundaries
+                lines = text.split('\n')
+                cleaned_lines = []
+                for line in lines:
+                    # Remove excessive spaces while preserving word boundaries
+                    cleaned_line = ' '.join(word for word in line.split() if word)
+                    if cleaned_line:
+                        cleaned_lines.append(cleaned_line)
+                # Join lines with proper spacing
+                text_blocks.append(' '.join(cleaned_lines))
+            # Join blocks with double newlines for paragraph separation
             content = '\n\n'.join(text_blocks)
         elif file_ext == 'md':
             with open(file_path, 'r', encoding='utf-8') as f:
@@ -76,9 +76,13 @@ def clean_word(word):
     if url_pattern.match(word):
         return ''
 
-    # Remove special characters and numbers, keep only letters
-    cleaned = re.sub(r'[^a-zA-Z]', '', word)
-    return cleaned.lower()
+    # Remove special characters but preserve word boundaries
+    # Keep apostrophes within words (e.g., "don't")
+    cleaned = re.sub(r'[^a-zA-Z\']', ' ', word)
+    # Remove standalone apostrophes and clean up spaces
+    cleaned = re.sub(r'\s\'|\'\s|^\'+|\'+$', ' ', cleaned)
+    # Convert to lowercase and split into words
+    return [w.lower() for w in cleaned.split() if w]
 
 @app.route('/api/count-chars', methods=['POST'])
 def count_characters():
@@ -110,10 +114,11 @@ def count_characters():
         valid_words = []
 
         for word in words:
-            cleaned_word = clean_word(word)
-            if cleaned_word:  # Only count non-empty strings after cleaning
-                valid_words.append(cleaned_word)
-                word_counts[cleaned_word] = word_counts.get(cleaned_word, 0) + 1
+            cleaned_words = clean_word(word)
+            for cleaned_word in cleaned_words:
+                if cleaned_word:  # Only count non-empty strings after cleaning
+                    valid_words.append(cleaned_word)
+                    word_counts[cleaned_word] = word_counts.get(cleaned_word, 0) + 1
 
         # Prepare response
         response = {
