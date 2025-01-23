@@ -612,10 +612,13 @@ const analyzeFile = async (fileInput) => {
 
             try {
                 let response;
-                const activeTab = document.querySelector('.nav-link.active').id;
+                const activeTab = document.querySelector('#inputTabs .nav-link.active').getAttribute('id');
 
                 if (activeTab === 'text-tab') {
                     const text = document.getElementById('inputText').value;
+                    if (!text.trim()) {
+                        throw new Error('Please enter some text to analyze');
+                    }
                     response = await fetch('/api/count-chars', {
                         method: 'POST',
                         headers: {
