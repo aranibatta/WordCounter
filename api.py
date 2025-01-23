@@ -1,15 +1,17 @@
 import os
-from flask import Flask, request, jsonify, send_from_directory
+from flask import Flask, request, jsonify, send_from_directory, redirect, url_for
 from flask_cors import CORS
 import logging
 import re
 from werkzeug.utils import secure_filename
 from PyPDF2 import PdfReader
 import markdown
-from shutil import copyfile # Added import statement
+import secrets
+from shutil import copyfile
+from models import Analysis
+from app import app, db
 
 # Initialize Flask app
-app = Flask(__name__)
 CORS(app)  # Enable CORS for all routes
 
 # Configure upload folder
@@ -144,11 +146,8 @@ def clean_word(word):
 
 @app.route('/api/count-chars', methods=['POST'])
 def count_characters():
-    """
-    API endpoint to count word occurrences in a string or uploaded file.
-    Ignores numbers, special characters, and URLs.
-    """
     try:
+        text = None
         if 'file' in request.files:
             file = request.files['file']
             if file and allowed_file(file.filename):
@@ -156,17 +155,15 @@ def count_characters():
             else:
                 return jsonify({'error': 'Invalid file type. Allowed types: PDF, MD, TXT'}), 400
         else:
-            # Get JSON data from request
             data = request.get_json()
             if not data or 'text' not in data:
                 return jsonify({'error': 'No text or file provided'}), 400
             text = data['text']
 
-        # Validate input type
         if not isinstance(text, str):
             return jsonify({'error': 'Text must be a string'}), 400
 
-        # Split text into words and clean them
+        # Process text and get word counts
         words = text.split()
         word_counts = {}
         valid_words = []
@@ -174,30 +171,61 @@ def count_characters():
         for word in words:
             cleaned_words = clean_word(word)
             for cleaned_word in cleaned_words:
-                if cleaned_word:  # Only count non-empty strings after cleaning
+                if cleaned_word:
                     valid_words.append(cleaned_word)
                     word_counts[cleaned_word] = word_counts.get(cleaned_word, 0) + 1
 
         # Prepare response
-        response = {
+        results = {
             'counts': word_counts,
             'total_length': len(valid_words)
         }
 
-        logging.debug(f"Processed text with {len(valid_words)} words and {len(word_counts)} unique words")
+        # Generate unique share ID and save analysis
+        share_id = secrets.token_urlsafe(12)
+        analysis = Analysis(
+            share_id=share_id,
+            content=text,
+            results=results
+        )
+        db.session.add(analysis)
+        db.session.commit()
 
-        return jsonify(response), 200
+        # Add share URL to response
+        results['share_url'] = url_for('get_analysis', share_id=share_id, _external=True)
+
+        logging.debug(f"Processed text with {len(valid_words)} words and {len(word_counts)} unique words")
+        return jsonify(results), 200
 
     except Exception as e:
         logging.error(f"Error processing request: {str(e)}")
         return jsonify({'error': 'Internal server error'}), 500
 
-# Add a simple homepage route that serves the static HTML
+@app.route('/analysis/<share_id>')
+def get_analysis(share_id):
+    """Retrieve shared analysis results"""
+    analysis = Analysis.query.filter_by(share_id=share_id).first()
+    if not analysis:
+        return jsonify({'error': 'Analysis not found'}), 404
+
+    return app.send_static_file('index.html')
+
+@app.route('/api/analysis/<share_id>')
+def get_analysis_data(share_id):
+    """Get analysis data for the frontend"""
+    analysis = Analysis.query.filter_by(share_id=share_id).first()
+    if not analysis:
+        return jsonify({'error': 'Analysis not found'}), 404
+
+    return jsonify({
+        'text': analysis.content,
+        'results': analysis.results
+    }), 200
+
 @app.route('/')
 def home():
     return app.send_static_file('index.html')
 
-# Add route to serve favicon
 @app.route('/favicon.ico')
 def favicon():
-    return send_from_directory('static', 'favicon.ico') #Corrected to .ico
+    return send_from_directory('static', 'favicon.ico')
