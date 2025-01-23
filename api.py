@@ -10,6 +10,12 @@ import secrets
 from shutil import copyfile
 from models import Analysis
 from app import app, db
+import nltk
+from nltk.tokenize import sent_tokenize, word_tokenize
+from statistics import mean
+
+# Download required NLTK data
+nltk.download('punkt', quiet=True)
 
 # Initialize Flask app
 CORS(app)  # Enable CORS for all routes
@@ -26,27 +32,72 @@ app.config['UPLOAD_FOLDER'] = UPLOAD_FOLDER
 def allowed_file(filename):
     return '.' in filename and filename.rsplit('.', 1)[1].lower() in ALLOWED_EXTENSIONS
 
+def count_syllables(word):
+    """Count syllables in a word using a basic heuristic."""
+    word = word.lower()
+    count = 0
+    vowels = 'aeiouy'
+    if word[0] in vowels:
+        count += 1
+    for index in range(1, len(word)):
+        if word[index] in vowels and word[index - 1] not in vowels:
+            count += 1
+    if word.endswith('e'):
+        count -= 1
+    if count == 0:
+        count = 1
+    return count
+
+def calculate_complexity_metrics(text):
+    """Calculate text complexity metrics for each sentence."""
+    sentences = sent_tokenize(text)
+    metrics = []
+
+    for sentence in sentences:
+        words = word_tokenize(sentence)
+        if not words:  # Skip empty sentences
+            continue
+
+        # Calculate metrics
+        word_lengths = [len(word) for word in words]
+        syllable_counts = [count_syllables(word) for word in words]
+
+        # Flesch Reading Ease score for the sentence
+        words_per_sentence = len(words)
+        syllables_per_word = mean(syllable_counts) if syllable_counts else 0
+        flesch_score = 206.835 - 1.015 * words_per_sentence - 84.6 * syllables_per_word
+
+        # Normalize score to 0-100 range
+        normalized_flesch = max(0, min(100, flesch_score))
+
+        metrics.append({
+            'text': sentence,
+            'complexity_score': normalized_flesch,
+            'metrics': {
+                'word_count': len(words),
+                'avg_word_length': mean(word_lengths),
+                'avg_syllables': mean(syllable_counts),
+                'flesch_score': normalized_flesch
+            }
+        })
+
+    return metrics
+
 def join_hyphenated_words(text):
     """Join words that have been split with hyphens at line breaks."""
-    # Pattern for hyphenated words at line breaks
     pattern = r'(\w+)-\n\s*(\w+)'
-    # Join the words, removing the hyphen and line break
     return re.sub(pattern, r'\1\2', text)
 
 def handle_bullet_points(text):
     """Properly format bullet points and numbered lists."""
-    # Add space after bullet points and numbers
     text = re.sub(r'(^|\n)[\u2022\u2023\u2043\u2219]\s*', r'\1• ', text)
     text = re.sub(r'(^|\n)\d+\.\s*', lambda m: f'\n{m.group().strip()} ', text)
     return text
 
 def clean_extra_whitespace(text):
     """Clean up extra whitespace while preserving intentional line breaks."""
-    # Replace multiple spaces with single space
     text = re.sub(r' +', ' ', text)
-    # Remove spaces at the beginning of lines
     text = re.sub(r'\n\s+', '\n', text)
-    # Remove multiple consecutive empty lines
     text = re.sub(r'\n{3,}', '\n\n', text)
     return text.strip()
 
@@ -84,7 +135,7 @@ def process_file_content(file):
 
                     if cleaned_line:
                         # Check if this line is a continuation of the previous line
-                        if (cleaned_line[0].islower() and current_paragraph 
+                        if (cleaned_line[0].islower() and current_paragraph
                             and not cleaned_line.startswith(('•', '1.', '2.', '3.', '4.', '5.', '6.', '7.', '8.', '9.'))):
                             current_paragraph.append(cleaned_line)
                         else:
@@ -175,10 +226,19 @@ def count_characters():
                     valid_words.append(cleaned_word)
                     word_counts[cleaned_word] = word_counts.get(cleaned_word, 0) + 1
 
+        # Calculate complexity metrics
+        complexity_analysis = calculate_complexity_metrics(text)
+
         # Prepare response
         results = {
             'counts': word_counts,
-            'total_length': len(valid_words)
+            'total_length': len(valid_words),
+            'complexity_analysis': complexity_analysis,
+            'overall_metrics': {
+                'avg_complexity': mean([s['complexity_score'] for s in complexity_analysis]),
+                'sentence_count': len(complexity_analysis),
+                'avg_sentence_length': mean([s['metrics']['word_count'] for s in complexity_analysis])
+            }
         }
 
         # Generate unique share ID and save analysis

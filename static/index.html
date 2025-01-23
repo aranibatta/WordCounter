@@ -262,6 +262,65 @@
                 transparent
             );
         }
+
+        /* Add styles for complexity heatmap */
+        .complexity-heatmap {
+            border: 1px solid #ddd;
+            border-radius: 8px;
+            padding: 1rem;
+            background: white;
+        }
+
+        .sentence-block {
+            padding: 1rem;
+            margin: 0.5rem 0;
+            border-radius: 4px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        .sentence-block:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+        }
+
+        .metrics-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 1rem;
+            margin-bottom: 1rem;
+        }
+
+        .metric-card {
+            background: white;
+            padding: 1rem;
+            border-radius: 4px;
+            border: 1px solid #ddd;
+        }
+
+        .metric-card h6 {
+            margin: 0;
+            color: #666;
+            font-size: 0.875rem;
+        }
+
+        .metric-card .value {
+            font-size: 1.25rem;
+            font-weight: 600;
+            color: var(--text-primary);
+        }
+
+        .tooltip {
+            position: absolute;
+            background: rgba(0,0,0,0.8);
+            color: white;
+            padding: 0.5rem;
+            border-radius: 4px;
+            font-size: 0.875rem;
+            z-index: 1000;
+            pointer-events: none;
+            max-width: 300px;
+        }
     </style>
 </head>
 <body>
@@ -332,6 +391,21 @@
                                 <h5 class="card-title">Word Frequency Visualization</h5>
                                 <div class="chart-container" style="position: relative; height:400px; width:100%">
                                     <canvas id="freqChart"></canvas>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="card mt-3" id="complexitySection" style="display: none;">
+                            <div class="card-body">
+                                <h5 class="card-title">Text Complexity Heatmap</h5>
+                                <div class="complexity-metrics mb-3">
+                                    <h6>Overall Metrics:</h6>
+                                    <div id="overallMetrics" class="metrics-grid">
+                                        <!-- Will be populated by JavaScript -->
+                                    </div>
+                                </div>
+                                <div id="complexityHeatmap" class="complexity-heatmap">
+                                    <!-- Will be populated by JavaScript -->
                                 </div>
                             </div>
                         </div>
@@ -622,6 +696,7 @@ const analyzeFile = async (fileInput) => {
             const resultElement = document.getElementById('result');
             const resultsSection = document.getElementById('resultsSection');
             const visualizationSection = document.getElementById('visualizationSection');
+            const complexitySection = document.getElementById('complexitySection');
 
             // Remove any existing share alerts
             const existingAlert = resultsSection.querySelector('.alert');
@@ -629,17 +704,18 @@ const analyzeFile = async (fileInput) => {
                 existingAlert.remove();
             }
 
+            // Display JSON results
             const jsonString = JSON.stringify(data, null, 2);
             resultElement.textContent = jsonString;
-            // Trigger Prism.js highlighting
             Prism.highlightElement(resultElement);
             resultElement.setAttribute('data-raw', JSON.stringify(data));
 
             // Show results sections
             resultsSection.style.display = 'block';
             visualizationSection.style.display = 'block';
+            complexitySection.style.display = 'block';
 
-            // Create visualization
+            // Create word frequency visualization
             const sortedWords = Object.entries(data.counts)
                 .sort(([,a], [,b]) => b - a)
                 .slice(0, 20);
@@ -648,7 +724,12 @@ const analyzeFile = async (fileInput) => {
 
             createChart(labels, frequencies);
 
-            // If there's a share URL, show it
+            // Create complexity heatmap
+            if (data.complexity_analysis) {
+                createComplexityHeatmap(data.complexity_analysis, data.overall_metrics);
+            }
+
+            // Handle share URL
             if (data.share_url) {
                 const shareAlert = document.createElement('div');
                 shareAlert.className = 'alert alert-info mt-3';
@@ -663,8 +744,78 @@ const analyzeFile = async (fileInput) => {
             }
         }
 
-        function copyShareUrl(url) {
-            navigator.clipboard.writeText(url).then(() => {
+        function createComplexityHeatmap(complexityData, overallMetrics) {
+            const heatmapContainer = document.getElementById('complexityHeatmap');
+            const overallMetricsContainer = document.getElementById('overallMetrics');
+
+            // Clear previous content
+            heatmapContainer.innerHTML = '';
+            overallMetricsContainer.innerHTML = '';
+
+            // Display overall metrics
+            const metricsHTML = `
+                <div class="metric-card">
+                    <h6>Average Complexity</h6>
+                    <div class="value">${overallMetrics.avg_complexity.toFixed(1)}</div>
+                </div>
+                <div class="metric-card">
+                    <h6>Sentence Count</h6>
+                    <div class="value">${overallMetrics.sentence_count}</div>
+                </div>
+                <div class="metric-card">
+                    <h6>Avg. Sentence Length</h6>
+                    <div class="value">${overallMetrics.avg_sentence_length.toFixed(1)} words</div>
+                </div>
+            `;
+            overallMetricsContainer.innerHTML = metricsHTML;
+
+            // Create sentence blocks with color gradients
+            complexityData.forEach((sentence, index) => {
+                const block = document.createElement('div');
+                block.className = 'sentence-block';
+                block.textContent = sentence.text;
+
+                // Calculate color based on complexity score (0-100)
+                // Green (easy) to yellow (moderate) to red (complex)
+                const hue = Math.max(0, Math.min(120, (100 - sentence.complexity_score) * 1.2));
+                block.style.backgroundColor = `hsl(${hue}, 70%, 90%)`;
+                block.style.borderLeft = `4px solid hsl(${hue}, 70%, 50%)`;
+
+                // Add hover tooltip with detailed metrics
+                block.addEventListener('mouseover', (e) => {
+                    const tooltip = document.createElement('div');
+                    tooltip.className = 'tooltip';
+                    tooltip.innerHTML = `
+                        <strong>Complexity Score:</strong> ${sentence.complexity_score.toFixed(1)}<br>
+                        <strong>Words:</strong> ${sentence.metrics.word_count}<br>
+                        <strong>Avg. Word Length:</strong> ${sentence.metrics.avg_word_length.toFixed(1)}<br>
+                        <strong>Avg. Syllables:</strong> ${sentence.metrics.avg_syllables.toFixed(1)}<br>
+                        <strong>Flesch Score:</strong> ${sentence.metrics.flesch_score.toFixed(1)}
+                    `;
+
+                    // Position tooltip
+                    tooltip.style.left = `${e.pageX + 10}px`;
+                    tooltip.style.top = `${e.pageY + 10}px`;
+
+                    document.body.appendChild(tooltip);
+
+                    block.addEventListener('mousemove', (e) => {
+                        tooltip.style.left = `${e.pageX + 10}px`;
+                        tooltip.style.top = `${e.pageY + 10}px`;
+                    });
+
+                    block.addEventListener('mouseleave', () => {
+                        tooltip.remove();
+                    });
+                });
+
+                heatmapContainer.appendChild(block);
+            });
+        }
+
+        function copyResult() {
+            const result = document.getElementById('result').getAttribute('data-raw');
+            navigator.clipboard.writeText(result).then(() => {
                 const copyBtn = event.target.closest('button');
                 const originalContent = copyBtn.innerHTML;
                 copyBtn.innerHTML = '<i class="bi bi-check"></i> Copied!';
@@ -711,6 +862,7 @@ const analyzeFile = async (fileInput) => {
             const uploadProgress = document.getElementById('uploadProgress');
             const progressBar = uploadProgress.querySelector('.progress-bar');
             const uploadStatus = document.getElementById('uploadStatus');
+            const complexitySection = document.getElementById('complexitySection');
 
             try {
                 let response;
@@ -805,6 +957,7 @@ const analyzeFile = async (fileInput) => {
                 resultElement.textContent = 'Error: ' + error.message;
                 resultsSection.style.display = 'block';
                 visualizationSection.style.display = 'none';
+                complexitySection.style.display = 'none';
             }
         }
 
