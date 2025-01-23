@@ -34,8 +34,22 @@ def process_file_content(file):
     try:
         if file_ext == 'pdf':
             reader = PdfReader(file_path)
+            text_blocks = []
             for page in reader.pages:
-                content += page.extract_text()
+                # Extract text from page
+                text = page.extract_text()
+                # Split into paragraphs
+                paragraphs = text.split('\n\n')
+                # Clean each paragraph
+                cleaned_paragraphs = []
+                for para in paragraphs:
+                    # Remove excessive whitespace while preserving intentional line breaks
+                    cleaned = ' '.join(para.split())
+                    if cleaned:
+                        cleaned_paragraphs.append(cleaned)
+                text_blocks.extend(cleaned_paragraphs)
+            # Join paragraphs with double newlines
+            content = '\n\n'.join(text_blocks)
         elif file_ext == 'md':
             with open(file_path, 'r', encoding='utf-8') as f:
                 md_content = f.read()
