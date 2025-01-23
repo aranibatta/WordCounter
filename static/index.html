@@ -291,6 +291,18 @@
                                         <p class="upload-subtext">or click to browse</p>
                                         <input type="file" class="form-control" id="inputFile" accept=".pdf,.md,.txt">
                                     </div>
+                                    <!-- Add progress bar container -->
+                                    <div id="uploadProgress" class="mt-3" style="display: none;">
+                                        <div class="progress" style="height: 25px;">
+                                            <div class="progress-bar progress-bar-striped progress-bar-animated" 
+                                                 role="progressbar" 
+                                                 style="width: 0%;" 
+                                                 aria-valuenow="0" 
+                                                 aria-valuemin="0" 
+                                                 aria-valuemax="100">0%</div>
+                                        </div>
+                                        <small class="text-muted mt-1" id="uploadStatus">Preparing upload...</small>
+                                    </div>
                                 </div>
                             </div>
                         </div>
@@ -646,6 +658,9 @@ const analyzeFile = async (fileInput) => {
             const resultElement = document.getElementById('result');
             const resultsSection = document.getElementById('resultsSection');
             const visualizationSection = document.getElementById('visualizationSection');
+            const uploadProgress = document.getElementById('uploadProgress');
+            const progressBar = uploadProgress.querySelector('.progress-bar');
+            const uploadStatus = document.getElementById('uploadStatus');
 
             try {
                 let response;
@@ -670,18 +685,66 @@ const analyzeFile = async (fileInput) => {
                         throw new Error('Please select a file');
                     }
 
+                    // Show progress bar for file uploads
+                    uploadProgress.style.display = 'block';
+
+                    // Create FormData
                     const formData = new FormData();
                     formData.append('file', file);
 
-                    response = await fetch('/api/count-chars', {
-                        method: 'POST',
-                        body: formData
+                    // Create promise to handle XMLHttpRequest
+                    response = await new Promise((resolve, reject) => {
+                        const xhr = new XMLHttpRequest();
+
+                        xhr.upload.addEventListener('progress', (e) => {
+                            if (e.lengthComputable) {
+                                const percentComplete = Math.round((e.loaded / e.total) * 100);
+                                progressBar.style.width = percentComplete + '%';
+                                progressBar.setAttribute('aria-valuenow', percentComplete);
+                                progressBar.textContent = percentComplete + '%';
+                                uploadStatus.textContent = 'Uploading file...';
+                            }
+                        });
+
+                        xhr.addEventListener('load', () => {
+                            if (xhr.status >= 200 && xhr.status < 300) {
+                                uploadStatus.textContent = 'Upload complete! Processing file...';
+                                resolve(new Response(xhr.response, {
+                                    status: xhr.status,
+                                    statusText: xhr.statusText,
+                                    headers: {
+                                        'Content-Type': 'application/json'
+                                    }
+                                }));
+                            } else {
+                                reject(new Error('Upload failed'));
+                            }
+                        });
+
+                        xhr.addEventListener('error', () => {
+                            uploadStatus.textContent = 'Upload failed!';
+                            reject(new Error('Network error occurred'));
+                        });
+
+                        xhr.open('POST', '/api/count-chars');
+                        xhr.send(formData);
                     });
                 }
 
                 const data = await response.json();
 
                 if (response.ok) {
+                    // Hide progress bar on success
+                    if (activeTab === 'file-tab') {
+                        setTimeout(() => {
+                            uploadProgress.style.display = 'none';
+                            // Reset progress bar
+                            progressBar.style.width = '0%';
+                            progressBar.setAttribute('aria-valuenow', 0);
+                            progressBar.textContent = '0%';
+                        }, 1000);
+                    }
+
                     const jsonString = JSON.stringify(data, null, 2);
                     resultElement.textContent = jsonString;
                     // Trigger Prism.js highlighting
@@ -703,6 +766,8 @@ const analyzeFile = async (fileInput) => {
                     throw new Error(data.error || 'Failed to process input');
                 }
             } catch (error) {
+                // Hide progress bar on error
+                uploadProgress.style.display = 'none';
                 resultElement.textContent = 'Error: ' + error.message;
                 resultsSection.style.display = 'block';
                 visualizationSection.style.display = 'none';
