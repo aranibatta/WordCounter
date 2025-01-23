@@ -822,23 +822,29 @@ const analyzeFile = async (fileInput) => {
                     document.getElementById('neutralScore').textContent = `Neutral ${(sentimentScores.neu * 100).toFixed(1)}%`;
 
                     document.getElementById('negativeScore').style.width = `${sentimentScores.neg * 100}%`;
-                    document.getElementById('negativeScore').textContent = `Negative ${(sentimentScores.neg * 100).toFixed(1)}%`;
+                    document.getElementById('negativeScore').textContent = `Negative ${(sentimentScores.neg* 100}%`;
 
                     const counts = data.counts;
                     const sortedWords = Object.entries(counts)
-                        `.sort(([,a], [,b]) => b - a)
+                        .sort(([,a], [,b]) => b - a)
                         .slice(0, 10);
 
                     const labels = sortedWords.map(([word]) => word);
                     const values = sortedWords.map(([,count]) => count);
 
                     createChart(labels, values);
-
+                    document.getElementById('downloadInfographic').style.display = 'inline-block';
                 } else {
                     throw new Error(data.error || 'Failed to process text');
                 }
             } catch (error) {
-                alert(error.message);
+                // Hide progress bar on error
+                if (uploadProgress) {
+                    uploadProgress.style.display = 'none';
+                }
+                resultElement.textContent = 'Error: ' + error.message;
+                resultsSection.style.display = 'block';
+                visualizationSection.style.display = 'none';
             }
         }
 
@@ -847,24 +853,41 @@ const analyzeFile = async (fileInput) => {
             const dropZone = document.getElementById('dragDropZone');
             const fileInput = document.getElementById('inputFile');
 
-            dropZone.addEventListener('click', () => fileInput.click());
-
-            dropZone.addEventListener('dragover', (e) => {
-                e.preventDefault();
-                dropZone.classList.add('dragover');
+            dropZone.addEventListener('click', () => {
+                fileInput.click();
             });
 
-            dropZone.addEventListener('dragleave', () => {
-                dropZone.classList.remove('dragover');
+            ['dragenter', 'dragover', 'dragleave', 'drop'].forEach(eventName => {
+                dropZone.addEventListener(eventName, (e) => {
+                    e.preventDefault();
+                    e.stopPropagation();
+                });
+            });
+
+            ['dragenter', 'dragover'].forEach(eventName => {
+                dropZone.addEventListener(eventName, () => {
+                    dropZone.classList.add('dragover');
+                });
+            });
+
+            ['dragleave', 'drop'].forEach(eventName => {
+                dropZone.addEventListener(eventName, () => {
+                    dropZone.classList.remove('dragover');
+                });
             });
 
             dropZone.addEventListener('drop', (e) => {
-                e.preventDefault();
-                dropZone.classList.remove('dragover');
-
                 const files = e.dataTransfer.files;
                 if (files.length > 0) {
                     fileInput.files = files;
+                    analyzeInput(); // Trigger analysis when file is dropped
+                }
+            });
+
+            // Also trigger analysis when file is selected through the file input
+            fileInput.addEventListener('change', () => {
+                if (fileInput.files.length > 0) {
+                    analyzeInput();
                 }
             });
         }
@@ -883,6 +906,7 @@ const analyzeFile = async (fileInput) => {
         // Initialize when the document is ready
         document.addEventListener('DOMContentLoaded', () => {
             setupDragAndDrop();
+            Prism.highlightAll();
         });
     </script>
 </body>
