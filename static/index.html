@@ -207,6 +207,42 @@
         .card-title {
             color: var(--text-primary);
         }
+
+        /* Add styles for drag and drop */
+        .drag-drop-zone {
+            border: 2px dashed #ddd;
+            border-radius: 8px;
+            padding: 2rem;
+            text-align: center;
+            background-color: white;
+            transition: all 0.3s ease;
+            cursor: pointer;
+        }
+
+        .drag-drop-zone.dragover {
+            border-color: var(--link-color);
+            background-color: rgba(244, 123, 84, 0.1);
+        }
+
+        .drag-drop-zone .upload-icon {
+            font-size: 2.5rem;
+            color: #6c757d;
+            margin-bottom: 1rem;
+        }
+
+        .drag-drop-zone .upload-text {
+            margin-bottom: 0.5rem;
+            color: #6c757d;
+        }
+
+        .drag-drop-zone .upload-subtext {
+            font-size: 0.875rem;
+            color: #6c757d;
+        }
+
+        #inputFile {
+            display: none;
+        }
     </style>
 </head>
 <body>
@@ -248,11 +284,11 @@
                             </div>
                             <div class="tab-pane fade" id="file-input" role="tabpanel">
                                 <div class="mb-3">
-                                    <label for="inputFile" class="form-label">Upload a file (PDF, MD, or TXT):</label>
-                                    <div class="input-group">
-                                        <span class="input-group-text">
-                                            <i class="bi bi-upload"></i>
-                                        </span>
+                                    <label class="form-label">Upload a file (PDF, MD, or TXT):</label>
+                                    <div class="drag-drop-zone" id="dragDropZone">
+                                        <i class="bi bi-cloud-upload upload-icon"></i>
+                                        <p class="upload-text">Drag and drop your file here</p>
+                                        <p class="upload-subtext">or click to browse</p>
                                         <input type="file" class="form-control" id="inputFile" accept=".pdf,.md,.txt">
                                     </div>
                                 </div>
@@ -678,6 +714,72 @@ const analyzeFile = async (fileInput) => {
         // Initialize Prism highlighting
         document.addEventListener('DOMContentLoaded', function() {
             Prism.highlightAll();
+        });
+
+
+        // Drag and drop functionality
+        function setupDragAndDrop() {
+            const dragDropZone = document.getElementById('dragDropZone');
+            const fileInput = document.getElementById('inputFile');
+
+            // Open file dialog when clicking the drag-drop zone
+            dragDropZone.addEventListener('click', () => {
+                fileInput.click();
+            });
+
+            // Prevent default drag behaviors
+            ['dragenter', 'dragover', 'dragleave', 'drop'].forEach(eventName => {
+                dragDropZone.addEventListener(eventName, preventDefaults, false);
+                document.body.addEventListener(eventName, preventDefaults, false);
+            });
+
+            // Handle drag enter and leave
+            ['dragenter', 'dragover'].forEach(eventName => {
+                dragDropZone.addEventListener(eventName, highlight, false);
+            });
+
+            ['dragleave', 'drop'].forEach(eventName => {
+                dragDropZone.addEventListener(eventName, unhighlight, false);
+            });
+
+            // Handle dropped files
+            dragDropZone.addEventListener('drop', handleDrop, false);
+
+            function preventDefaults(e) {
+                e.preventDefault();
+                e.stopPropagation();
+            }
+
+            function highlight(e) {
+                dragDropZone.classList.add('dragover');
+            }
+
+            function unhighlight(e) {
+                dragDropZone.classList.remove('dragover');
+            }
+
+            function handleDrop(e) {
+                const dt = e.dataTransfer;
+                const files = dt.files;
+
+                if (files.length > 0) {
+                    fileInput.files = files;
+                    // Trigger analysis if a file is dropped
+                    analyzeInput();
+                }
+            }
+
+            // Update file input change handler
+            fileInput.addEventListener('change', () => {
+                if (fileInput.files.length > 0) {
+                    analyzeInput();
+                }
+            });
+        }
+
+        // Initialize drag and drop when the document is loaded
+        document.addEventListener('DOMContentLoaded', function() {
+            setupDragAndDrop();
         });
     </script>
 </body>
