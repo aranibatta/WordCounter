@@ -4,8 +4,6 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Word Counter</title>
-    <!-- Add favicon -->
-    <link rel="icon" type="image/x-icon" href="/favicon.ico">
     <!-- Add IBM Plex Sans font -->
     <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600&display=swap" rel="stylesheet">
     <link href="https://cdn.replit.com/agent/bootstrap-agent-dark-theme.min.css" rel="stylesheet">
@@ -560,8 +558,50 @@ const analyzeFile = async (fileInput) => {
     <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/components/prism-bash.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/components/prism-json.min.js"></script>
     <script>
-        // Chart instance
         let chart = null;
+
+        // Initialize documentation examples with formatted JSON
+        document.addEventListener('DOMContentLoaded', function() {
+            const responseExample = {
+                "counts": {
+                    "the": 4,
+                    "quick": 2,
+                    "brown": 1,
+                    "fox": 2,
+                    "jumps": 1,
+                    "over": 1,
+                    "lazy": 2,
+                    "dog": 2
+                },
+                "total_length": 15
+            };
+            document.getElementById('responseExample').innerHTML = formatJSON(responseExample);
+        });
+
+        function generateRandomColor() {
+            const hue = Math.floor(Math.random() * 360);
+            return `hsla(${hue}, 70%, 50%, 0.6)`;
+        }
+
+        function formatJSON(obj) {
+            return JSON.stringify(obj, null, 2)
+                .replace(/"([^"]+)":/g, '<span class="json-key">"$1"</span>:')
+                .replace(/"([^"]+)"(?=[,\n])/g, '<span class="json-string">"$1"</span>')
+                .replace(/\b(\d+)\b/g, '<span class="json-number">$1</span>');
+        }
+
+        function copyResult() {
+            const resultElement = document.getElementById('result');
+            const textToCopy = JSON.parse(resultElement.getAttribute('data-raw'));
+            navigator.clipboard.writeText(JSON.stringify(textToCopy, null, 2))
+                .then(() => {
+                    const copyBtn = document.querySelector('.copy-button');
+                    copyBtn.innerHTML = '<i class="bi bi-check"></i> Copied!';
+                    setTimeout(() => {
+                        copyBtn.innerHTML = '<i class="bi bi-clipboard"></i> Copy';
+                    }, 2000);
+                });
+        }
 
         function createChart(labels, data) {
             if (chart) {
@@ -613,96 +653,23 @@ const analyzeFile = async (fileInput) => {
             });
         }
 
-        function generateRandomColor() {
-            const hue = Math.floor(Math.random() * 360);
-            return `hsla(${hue}, 70%, 50%, 0.6)`;
-        }
+        // Add copy to clipboard button to code blocks
+        Prism.plugins.toolbar.registerButton('copy-to-clipboard', function(env) {
+            const button = document.createElement('button');
+            button.innerHTML = '<i class="bi bi-clipboard"></i> Copy';
 
-        function displayResults(data) {
-            const resultElement = document.getElementById('result');
-            const resultsSection = document.getElementById('resultsSection');
-            const visualizationSection = document.getElementById('visualizationSection');
-
-            // Remove any existing share alerts
-            const existingAlert = resultsSection.querySelector('.alert');
-            if (existingAlert) {
-                existingAlert.remove();
-            }
-
-            const jsonString = JSON.stringify(data, null, 2);
-            resultElement.textContent = jsonString;
-            // Trigger Prism.js highlighting
-            Prism.highlightElement(resultElement);
-            resultElement.setAttribute('data-raw', JSON.stringify(data));
-
-            // Show results sections
-            resultsSection.style.display = 'block';
-            visualizationSection.style.display = 'block';
-
-            // Create visualization
-            const sortedWords = Object.entries(data.counts)
-                .sort(([,a], [,b]) => b - a)
-                .slice(0, 20);
-            const labels = sortedWords.map(([word]) => word);
-            const frequencies = sortedWords.map(([,count]) => count);
-
-            createChart(labels, frequencies);
-
-            // If there's a share URL, show it
-            if (data.share_url) {
-                const shareAlert = document.createElement('div');
-                shareAlert.className = 'alert alert-info mt-3';
-                shareAlert.innerHTML = `
-                    Share this analysis: 
-                    <input type="text" class="form-control mt-2" value="${data.share_url}" readonly>
-                    <button class="btn btn-secondary btn-sm mt-2" onclick="copyShareUrl('${data.share_url}')">
-                        <i class="bi bi-clipboard"></i> Copy Link
-                    </button>
-                `;
-                resultsSection.insertBefore(shareAlert, resultsSection.firstChild);
-            }
-        }
-
-        function copyShareUrl(url) {
-            navigator.clipboard.writeText(url).then(() => {
-                const copyBtn = event.target.closest('button');
-                const originalContent = copyBtn.innerHTML;
-                copyBtn.innerHTML = '<i class="bi bi-check"></i> Copied!';
-                setTimeout(() => {
-                    copyBtn.innerHTML = originalContent;
-                }, 2000);
+            button.addEventListener('click', function() {
+                const code = env.element.textContent;
+                navigator.clipboard.writeText(code).then(function() {
+                    button.innerHTML = '<i class="bi bi-check"></i> Copied!';
+                    setTimeout(function() {
+                        button.innerHTML = '<i class="bi bi-clipboard"></i> Copy';
+                    }, 2000);
+                });
             });
-        }
 
-        async function loadSharedAnalysis(shareId) {
-            try {
-                const response = await fetch(`/api/analysis/${shareId}`);
-                const data = await response.json();
-
-                if (response.ok) {
-                    // Fill the text input with the original content
-                    document.getElementById('inputText').value = data.text;
-
-                    // Switch to text input tab
-                    const textTab = document.querySelector('#text-tab');
-                    const bsTab = new bootstrap.Tab(textTab);
-                    bsTab.show();
-
-                    // Display the results
-                    displayResults({
-                        ...data.results,
-                        share_url: window.location.href
-                    });
-                } else {
-                    throw new Error(data.error || 'Failed to load shared analysis');
-                }
-            } catch (error) {
-                const resultElement = document.getElementById('result');
-                const resultsSection = document.getElementById('resultsSection');
-                resultElement.textContent = 'Error: ' + error.message;
-                resultsSection.style.display = 'block';
-            }
-        }
+            return button;
+        });
 
         async function analyzeInput() {
             const resultElement = document.getElementById('result');
@@ -795,7 +762,23 @@ const analyzeFile = async (fileInput) => {
                         }, 1000);
                     }
 
-                    displayResults(data);
+                    const jsonString = JSON.stringify(data, null, 2);
+                    resultElement.textContent = jsonString;
+                    // Trigger Prism.js highlighting
+                    Prism.highlightElement(resultElement);
+                    resultElement.setAttribute('data-raw', JSON.stringify(data));
+
+                    resultsSection.style.display = 'block';
+                    visualizationSection.style.display = 'block';
+
+                    const counts = data.counts;
+                    const sortedWords = Object.entries(counts)
+                        .sort(([,a], [,b]) => b - a)
+                        .slice(0, 20);
+                    const labels = sortedWords.map(([word]) => word);
+                    const frequencies = sortedWords.map(([,count]) => count);
+
+                    createChart(labels, frequencies);
                 } else {
                     throw new Error(data.error || 'Failed to process input');
                 }
@@ -807,8 +790,21 @@ const analyzeFile = async (fileInput) => {
                 visualizationSection.style.display = 'none';
             }
         }
+        // Updated switchLanguage function
+        function switchLanguage(language, exampleClass) {
+            document.querySelectorAll(`.${exampleClass} > .code-example`).forEach(el => {
+                el.classList.remove('active');
+            });
+            document.querySelector(`.${exampleClass} > .code-example[data-language="${language}"]`).classList.add('active');
+        }
 
-        // Setup functions
+        // Initialize Prism highlighting
+        document.addEventListener('DOMContentLoaded', function() {
+            Prism.highlightAll();
+        });
+
+
+        // Drag and drop functionality
         function setupDragAndDrop() {
             const dragDropZone = document.getElementById('dragDropZone');
             const fileInput = document.getElementById('inputFile');
@@ -855,6 +851,7 @@ const analyzeFile = async (fileInput) => {
 
                 if (files.length > 0) {
                     fileInput.files = files;
+                    // Trigger analysis if a file is dropped
                     analyzeInput();
                 }
             }
@@ -867,27 +864,9 @@ const analyzeFile = async (fileInput) => {
             });
         }
 
-        function switchLanguage(language, exampleClass) {
-            document.querySelectorAll(`.${exampleClass} > .code-example`).forEach(el => {
-                el.classList.remove('active');
-            });
-            document.querySelector(`.${exampleClass} > .code-example[data-language="${language}"]`).classList.add('active');
-        }
-
-        // Initialize everything when the document is loaded
+        // Initialize drag and drop when the document is loaded
         document.addEventListener('DOMContentLoaded', function() {
-            // Initialize Prism highlighting
-            Prism.highlightAll();
-
-            // Setup drag and drop
             setupDragAndDrop();
-
-            // Check for shared analysis
-            const path = window.location.pathname;
-            if (path.startsWith('/analysis/')) {
-                const shareId = path.split('/').pop();
-                loadSharedAnalysis(shareId);
-            }
         });
     </script>
 </body>
