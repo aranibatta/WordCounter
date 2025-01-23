@@ -177,11 +177,10 @@ def count_characters():
                     valid_words.append(cleaned_word)
                     word_counts[cleaned_word] = word_counts.get(cleaned_word, 0) + 1
 
-        # Prepare response with original text included
+        # Prepare response
         response = {
             'counts': word_counts,
-            'total_length': len(valid_words),
-            'original_text': text  # Include the original text in the response
+            'total_length': len(valid_words)
         }
 
         logging.debug(f"Processed text with {len(valid_words)} words and {len(word_counts)} unique words")
