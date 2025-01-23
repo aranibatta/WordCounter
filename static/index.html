@@ -588,7 +588,6 @@ const analyzeFile = async (fileInput) => {
     <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/components/prism-javascript.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/components/prism-bash.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/components/prism-json.min.js"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
 
     <script>
         let chart = null;
@@ -827,268 +826,64 @@ const analyzeFile = async (fileInput) => {
 
                     const counts = data.counts;
                     const sortedWords = Object.entries(counts)
-                        .sort(([,a], [,b]) => b - a)
-                        .slice(0, 20);
-                    const labels = sortedWords.map(([word]) => word);
-                    const frequencies = sortedWords.map(([,count]) => count);
+                        `.sort(([,a], [,b]) => b - a)
+                        .slice(0, 10);
 
-                    createChart(labels, frequencies);
+                    const labels = sortedWords.map(([word]) => word);
+                    const values = sortedWords.map(([,count]) => count);
+
+                    createChart(labels, values);
+
                 } else {
-                    throw new Error(data.error || 'Failed to process input');
+                    throw new Error(data.error || 'Failed to process text');
                 }
             } catch (error) {
-                // Hide progress bar on error
-                uploadProgress.style.display = 'none';
-                resultElement.textContent = 'Error: ' + error.message;
-                resultsSection.style.display = 'block';
-                visualizationSection.style.display = 'none';
+                alert(error.message);
             }
         }
-        // Updated switchLanguage function
-        function switchLanguage(language, exampleClass) {
-            document.querySelectorAll(`.${exampleClass} > .code-example`).forEach(el => {
-                el.classList.remove('active');
-            });
-            document.querySelector(`.${exampleClass} > .code-example[data-language="${language}"]`).classList.add('active');
-        }
 
-        // Initialize Prism highlighting
-        document.addEventListener('DOMContentLoaded', function() {
-            Prism.highlightAll();
-        });
-
-
-        // Drag and drop functionality
+        // Set up drag and drop functionality
         function setupDragAndDrop() {
-            const dragDropZone = document.getElementById('dragDropZone');
+            const dropZone = document.getElementById('dragDropZone');
             const fileInput = document.getElementById('inputFile');
 
-            // Open file dialog when clicking the drag-drop zone
-            dragDropZone.addEventListener('click', () => {
-                fileInput.click();
-            });
+            dropZone.addEventListener('click', () => fileInput.click());
 
-            // Prevent default drag behaviors
-            ['dragenter', 'dragover', 'dragleave', 'drop'].forEach(eventName => {
-                dragDropZone.addEventListener(eventName, preventDefaults, false);
-                document.body.addEventListener(eventName, preventDefaults, false);
-            });
-
-            // Handle drag enter and leave
-            ['dragenter', 'dragover'].forEach(eventName => {
-                dragDropZone.addEventListener(eventName, highlight, false);
-            });
-
-            ['dragleave', 'drop'].forEach(eventName => {
-                dragDropZone.addEventListener(eventName, unhighlight, false);
-            });
-
-            // Handle dropped files
-            dragDropZone.addEventListener('drop', handleDrop, false);
-
-            function preventDefaults(e) {
+            dropZone.addEventListener('dragover', (e) => {
                 e.preventDefault();
-                e.stopPropagation();
-            }
+                dropZone.classList.add('dragover');
+            });
 
-            function highlight(e) {
-                dragDropZone.classList.add('dragover');
-            }
+            dropZone.addEventListener('dragleave', () => {
+                dropZone.classList.remove('dragover');
+            });
 
-            function unhighlight(e) {
-                dragDropZone.classList.remove('dragover');
-            }
+            dropZone.addEventListener('drop', (e) => {
+                e.preventDefault();
+                dropZone.classList.remove('dragover');
 
-            function handleDrop(e) {
-                const dt = e.dataTransfer;
-                const files = dt.files;
-
+                const files = e.dataTransfer.files;
                 if (files.length > 0) {
                     fileInput.files = files;
-                    // Trigger analysis if a file is dropped
-                    analyzeInput();
-                }
-            }
-
-            // Update file input change handler
-            fileInput.addEventListener('change', () => {
-                if (fileInput.files.length > 0) {
-                    analyzeInput();
                 }
             });
         }
 
-        // Initialize drag and drop when the document is loaded
-        document.addEventListener('DOMContentLoaded', function() {
+        // Language switcher for documentation
+        function switchLanguage(language, examplesClass) {
+            const examples = document.querySelectorAll(`.${examplesClass} .code-example`);
+            examples.forEach(example => {
+                example.classList.remove('active');
+                if (example.getAttribute('data-language') === language) {
+                    example.classList.add('active');
+                }
+            });
+        }
+
+        // Initialize when the document is ready
+        document.addEventListener('DOMContentLoaded', () => {
             setupDragAndDrop();
         });
-    </script>
-    <script>
-    async function generateInfographic() {
-        // Initialize jsPDF
-        const { jsPDF } = window.jspdf;
-        const doc = new jsPDF('p', 'pt', 'a4');
-        const pageWidth = doc.internal.pageSize.width;
-        const pageHeight = doc.internal.pageSize.height;
-
-        // Set background
-        doc.setFillColor(251, 250, 233); // #FBFAE9
-        doc.rect(0, 0, pageWidth, pageHeight, 'F');
-
-        // Add title
-        doc.setTextColor(0, 0, 0);
-        doc.setFont('helvetica', 'bold');
-        doc.setFontSize(24);
-        doc.text('Text Analysis Results', pageWidth / 2, 40, { align: 'center' });
-
-        // Add timestamp
-        const date = new Date().toLocaleDateString();
-        doc.setFontSize(12);
-        doc.setFont('helvetica', 'normal');
-        doc.text(`Generated on ${date}`, pageWidth / 2, 60, { align: 'center' });
-
-        // Get the data from the current analysis
-        const rawData = JSON.parse(document.getElementById('result').getAttribute('data-raw'));
-        const totalWords = rawData.total_length;
-        const wordCounts = rawData.counts;
-
-        // Add total word count
-        doc.setFontSize(18);
-        doc.setFont('helvetica', 'bold');
-        doc.text('Total Words Analyzed', pageWidth / 2, 100, { align: 'center' });
-        doc.setFontSize(36);
-        doc.setTextColor(244, 123, 84); // #F47B54
-        doc.text(totalWords.toString(), pageWidth / 2, 140, { align: 'center' });
-
-        // Add top words section
-        doc.setTextColor(0, 0, 0);
-        doc.setFontSize(18);
-        doc.text('Most Frequent Words', pageWidth / 2, 200, { align: 'center' });
-
-        // Create bar chart
-        const sortedWords = Object.entries(wordCounts)
-            .sort(([,a], [,b]) => b - a)
-            .slice(0, 10);
-
-        const barWidth = 400;
-        const barHeight = 20;
-        const barGap = 10;
-        const startY = 220;
-        const maxCount = Math.max(...sortedWords.map(([,count]) => count));
-
-        // Use the same color generation function as the website chart
-        function generateRandomColor() {
-            const hue = Math.floor(Math.random() * 360);
-            return `hsla(${hue}, 70%, 50%, 0.6)`;
-        }
-
-        // Convert HSL to RGB for PDF
-        function hslToRgb(h, s, l) {
-            h /= 360;
-            s /= 100;
-            l /= 50;
-            let r, g, b;
-            if (s === 0) {
-                r = g = b = l;
-            } else {
-                const hue2rgb = (p, q, t) => {
-                    if (t < 0) t += 1;
-                    if (t > 1) t -= 1;
-                    if (t < 1/6) return p + (q - p) * 6 * t;
-                    if (t < 1/2) return q;
-                    if (t < 2/3) return p + (q - p) * (2/3 - t) * 6;
-                    return p;
-                };
-                const q = l < 0.5 ? l * (1 + s) : l + s - l * s;
-                const p = 2 * l - q;
-                r = hue2rgb(p, q, h + 1/3);
-                g = hue2rgb(p, q, h);
-                b = hue2rgb(p, q, h - 1/3);
-            }
-            return [Math.round(r * 255), Math.round(g * 255), Math.round(b * 255)];
-        }
-
-        sortedWords.forEach(([word, count], index) => {
-            const y = startY + (barHeight + barGap) * index;
-            const width = (count / maxCount) * barWidth;
-
-            // Generate color and convert to RGB
-            const hue = Math.floor(Math.random() * 360);
-            const [r, g, b] = hslToRgb(hue, 70, 25);
-
-            // Draw bar
-            doc.setFillColor(r, g, b);
-            doc.rect((pageWidth - barWidth) / 2, y, width, barHeight, 'F');
-
-            // Add word label
-            doc.setFontSize(12);
-            doc.setTextColor(0, 0, 0);
-            doc.setFont('helvetica', 'normal');
-            doc.text(word, (pageWidth - barWidth) / 2 - 5, y + barHeight/2, { align: 'right' });
-
-            // Add count label
-            doc.text(count.toString(), (pageWidth - barWidth) / 2 + width + 5, y + barHeight/2, { align: 'left' });
-        });
-
-        // Add sentiment analysis section to PDF
-        doc.addPage();
-        doc.setTextColor(0, 0, 0);
-        doc.setFontSize(18);
-        doc.setFont('helvetica', 'bold');
-        doc.text('Sentiment Analysis', pageWidth / 2, 40, { align: 'center' });
-
-        // Add overall sentiment
-        doc.setFontSize(14);
-        doc.text('Overall Sentiment:', pageWidth / 2, 70, { align: 'center' });
-
-        // Set color based on sentiment
-        const sentimentColor = rawData.sentiment.overall_sentiment === 'positive' ? [46, 184, 46] : 
-                             rawData.sentiment.overall_sentiment === 'negative' ? [220, 53, 69] : 
-                             [255, 193, 7];
-
-        doc.setTextColor(...sentimentColor);
-        doc.setFontSize(24);
-        doc.text(rawData.sentiment.overall_sentiment.toUpperCase(), pageWidth / 2, 100, { align: 'center' });
-
-        // Add sentiment scores
-        const scores = rawData.sentiment.scores;
-        doc.setTextColor(0, 0, 0);
-        doc.setFontSize(12);
-
-        const startY = 140;
-        const barWidth = 400;
-        const barHeight = 30;
-
-        // Positive score
-        doc.setFillColor(46, 184, 46);
-        doc.rect((pageWidth - barWidth) / 2, startY, barWidth * scores.pos, barHeight, 'F');
-        doc.text(`Positive: ${(scores.pos * 100).toFixed(1)}%`, (pageWidth - barWidth) / 2 - 5, startY + barHeight/2, { align: 'right' });
-
-        // Neutral score
-        doc.setFillColor(255, 193, 7);
-        doc.rect((pageWidth - barWidth) / 2, startY + 40, barWidth * scores.neu, barHeight, 'F');
-        doc.text(`Neutral: ${(scores.neu * 100).toFixed(1)}%`, (pageWidth - barWidth) / 2 - 5, startY + 40 + barHeight/2, { align: 'right' });
-
-        // Negative score
-        doc.setFillColor(220, 53, 69);
-        doc.rect((pageWidth - barWidth) / 2, startY + 80, barWidth * scores.neg, barHeight, 'F');
-        doc.text(`Negative: ${(scores.neg * 100).toFixed(1)}%`, (pageWidth - barWidth) / 2 - 5, startY + 80 + barHeight/2, { align: 'right' });
-
-        // Add watermark
-        doc.setFontSize(10);
-        doc.setTextColor(200, 200, 200);
-        doc.text('Generated by Word Counter', pageWidth / 2, pageHeight - 20, { align: 'center' });
-
-        // Save the PDF
-        doc.save('text-analysis-report.pdf');
-    }
-
-    // Modify analyzeInput function to show download button when analysis is complete
-    const originalAnalyzeInput = analyzeInput;
-    analyzeInput = async function() {
-        await originalAnalyzeInput.call(this);
-        document.getElementById('downloadInfographic').style.display = 'inline-block';
-    };
     </script>
 </body>
 </html>
