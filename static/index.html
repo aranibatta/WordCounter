@@ -560,50 +560,8 @@ const analyzeFile = async (fileInput) => {
     <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/components/prism-bash.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/components/prism-json.min.js"></script>
     <script>
+        // Chart instance
         let chart = null;
-
-        // Initialize documentation examples with formatted JSON
-        document.addEventListener('DOMContentLoaded', function() {
-            const responseExample = {
-                "counts": {
-                    "the": 4,
-                    "quick": 2,
-                    "brown": 1,
-                    "fox": 2,
-                    "jumps": 1,
-                    "over": 1,
-                    "lazy": 2,
-                    "dog": 2
-                },
-                "total_length": 15
-            };
-            document.getElementById('responseExample').innerHTML = formatJSON(responseExample);
-        });
-
-        function generateRandomColor() {
-            const hue = Math.floor(Math.random() * 360);
-            return `hsla(${hue}, 70%, 50%, 0.6)`;
-        }
-
-        function formatJSON(obj) {
-            return JSON.stringify(obj, null, 2)
-                .replace(/"([^"]+)":/g, '<span class="json-key">"$1"</span>:')
-                .replace(/"([^"]+)"(?=[,\n])/g, '<span class="json-string">"$1"</span>')
-                .replace(/\b(\d+)\b/g, '<span class="json-number">$1</span>');
-        }
-
-        function copyResult() {
-            const resultElement = document.getElementById('result');
-            const textToCopy = JSON.parse(resultElement.getAttribute('data-raw'));
-            navigator.clipboard.writeText(JSON.stringify(textToCopy, null, 2))
-                .then(() => {
-                    const copyBtn = document.querySelector('.copy-button');
-                    copyBtn.innerHTML = '<i class="bi bi-check"></i> Copied!';
-                    setTimeout(() => {
-                        copyBtn.innerHTML = '<i class="bi bi-clipboard"></i> Copy';
-                    }, 2000);
-                });
-        }
 
         function createChart(labels, data) {
             if (chart) {
@@ -655,23 +613,10 @@ const analyzeFile = async (fileInput) => {
             });
         }
 
-        // Add copy to clipboard button to code blocks
-        Prism.plugins.toolbar.registerButton('copy-to-clipboard', function(env) {
-            const button = document.createElement('button');
-            button.innerHTML = '<i class="bi bi-clipboard"></i> Copy';
-
-            button.addEventListener('click', function() {
-                const code = env.element.textContent;
-                navigator.clipboard.writeText(code).then(function() {
-                    button.innerHTML = '<i class="bi bi-check"></i> Copied!';
-                    setTimeout(function() {
-                        button.innerHTML = '<i class="bi bi-clipboard"></i> Copy';
-                    }, 2000);
-                });
-            });
-
-            return button;
-        });
+        function generateRandomColor() {
+            const hue = Math.floor(Math.random() * 360);
+            return `hsla(${hue}, 70%, 50%, 0.6)`;
+        }
 
         function displayResults(data) {
             const resultElement = document.getElementById('result');
@@ -729,6 +674,35 @@ const analyzeFile = async (fileInput) => {
             });
         }
 
+        async function loadSharedAnalysis(shareId) {
+            try {
+                const response = await fetch(`/api/analysis/${shareId}`);
+                const data = await response.json();
+
+                if (response.ok) {
+                    // Fill the text input with the original content
+                    document.getElementById('inputText').value = data.text;
+
+                    // Switch to text input tab
+                    const textTab = document.querySelector('#text-tab');
+                    const bsTab = new bootstrap.Tab(textTab);
+                    bsTab.show();
+
+                    // Display the results
+                    displayResults({
+                        ...data.results,
+                        share_url: window.location.href
+                    });
+                } else {
+                    throw new Error(data.error || 'Failed to load shared analysis');
+                }
+            } catch (error) {
+                const resultElement = document.getElementById('result');
+                const resultsSection = document.getElementById('resultsSection');
+                resultElement.textContent = 'Error: ' + error.message;
+                resultsSection.style.display = 'block';
+            }
+        }
 
         async function analyzeInput() {
             const resultElement = document.getElementById('result');
@@ -833,20 +807,9 @@ const analyzeFile = async (fileInput) => {
                 visualizationSection.style.display = 'none';
             }
         }
-        // Updated switchLanguage function
-        function switchLanguage(language, exampleClass) {
-            document.querySelectorAll(`.${exampleClass} > .code-example`).forEach(el => {
-                el.classList.remove('active');
-            });
-            document.querySelector(`.${exampleClass} > .code-example[data-language="${language}"]`).classList.add('active');
-        }
 
-        // Initialize Prism highlighting        document.addEventListener('DOMContentLoaded', function() {
-            Prism.highlightAll();
-        });
-
-
-        // Drag and drop functionality        function setupDragAndDrop() {
+        // Setup functions
+        function setupDragAndDrop() {
             const dragDropZone = document.getElementById('dragDropZone');
             const fileInput = document.getElementById('inputFile');
 
@@ -892,7 +855,6 @@ const analyzeFile = async (fileInput) => {
 
                 if (files.length > 0) {
                     fileInput.files = files;
-                    //                    // Trigger analysis if a file is dropped
                     analyzeInput();
                 }
             }
@@ -905,280 +867,28 @@ const analyzeFile = async (fileInput) => {
             });
         }
 
-        // Initialize drag and drop when the document is loaded
+        function switchLanguage(language, exampleClass) {
+            document.querySelectorAll(`.${exampleClass} > .code-example`).forEach(el => {
+                el.classList.remove('active');
+            });
+            document.querySelector(`.${exampleClass} > .code-example[data-language="${language}"]`).classList.add('active');
+        }
+
+        // Initialize everything when the document is loaded
         document.addEventListener('DOMContentLoaded', function() {
+            // Initialize Prism highlighting
+            Prism.highlightAll();
+
+            // Setup drag and drop
             setupDragAndDrop();
+
+            // Check for shared analysis
+            const path = window.location.pathname;
+            if (path.startsWith('/analysis/')) {
+                const shareId = path.split('/').pop();
+                loadSharedAnalysis(shareId);
+            }
         });
     </script>
-    <script>
-    let chart = null;
-
-    // Check for shared analysis on page load
-    document.addEventListener('DOMContentLoaded', async function() {
-        const path = window.location.pathname;
-        if (path.startsWith('/analysis/')) {
-            const shareId = path.split('/').pop();
-            await loadSharedAnalysis(shareId);
-        }
-    });
-
-    async function loadSharedAnalysis(shareId) {
-        try {
-            const response = await fetch(`/api/analysis/${shareId}`);
-            const data = await response.json();
-
-            if (response.ok) {
-                // Fill the text input with the original content
-                document.getElementById('inputText').value = data.text;
-
-                // Switch to text input tab
-                const textTab = document.querySelector('#text-tab');
-                const bsTab = new bootstrap.Tab(textTab);
-                bsTab.show();
-
-                // Display the results
-                displayResults({
-                    ...data.results,
-                    share_url: window.location.href
-                });
-            } else {
-                throw new Error(data.error || 'Failed to load shared analysis');
-            }
-        } catch (error) {
-            const resultElement = document.getElementById('result');
-            const resultsSection = document.getElementById('resultsSection');
-            resultElement.textContent = 'Error: ' + error.message;
-            resultsSection.style.display = 'block';
-        }
-    }
-
-    function displayResults(data) {
-        const resultElement = document.getElementById('result');
-        const resultsSection = document.getElementById('resultsSection');
-        const visualizationSection = document.getElementById('visualizationSection');
-
-        // Remove any existing share alerts
-        const existingAlert = resultsSection.querySelector('.alert');
-        if (existingAlert) {
-            existingAlert.remove();
-        }
-
-        const jsonString = JSON.stringify(data, null, 2);
-        resultElement.textContent = jsonString;
-        // Trigger Prism.js highlighting
-        Prism.highlightElement(resultElement);
-        resultElement.setAttribute('data-raw', JSON.stringify(data));
-
-        // Show results sections
-        resultsSection.style.display = 'block';
-        visualizationSection.style.display = 'block';
-
-        // Create visualization
-        const sortedWords = Object.entries(data.counts)
-            .sort(([,a], [,b]) => b - a)
-            .slice(0, 20);
-        const labels = sortedWords.map(([word]) => word);
-        const frequencies = sortedWords.map(([,count]) => count);
-
-        createChart(labels, frequencies);
-
-        // If there's a share URL, show it
-        if (data.share_url) {
-            const shareAlert = document.createElement('div');
-            shareAlert.className = 'alert alert-info mt-3';
-            shareAlert.innerHTML = `
-                Share this analysis: 
-                <input type="text" class="form-control mt-2" value="${data.share_url}" readonly>
-                <button class="btn btn-secondary btn-sm mt-2" onclick="copyShareUrl('${data.share_url}')">
-                    <i class="bi bi-clipboard"></i> Copy Link
-                </button>
-            `;
-            resultsSection.insertBefore(shareAlert, resultsSection.firstChild);
-        }
-    }
-
-    // Previous analyzeInput function remains unchanged except for displayResults call
-    async function analyzeInput() {
-        const resultElement = document.getElementById('result');
-        const resultsSection = document.getElementById('resultsSection');
-        const visualizationSection = document.getElementById('visualizationSection');
-        const uploadProgress = document.getElementById('uploadProgress');
-        const progressBar = uploadProgress.querySelector('.progress-bar');
-        const uploadStatus = document.getElementById('uploadStatus');
-
-        try {
-            let response;
-            const activeTab = document.querySelector('#inputTabs .nav-link.active').getAttribute('id');
-
-            if (activeTab === 'text-tab') {
-                const text = document.getElementById('inputText').value;
-                if (!text.trim()) {
-                    throw new Error('Please enter some text to analyze');
-                }
-                response = await fetch('/api/count-chars', {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json',
-                    },
-                    body: JSON.stringify({ text }),
-                });
-            } else {
-                const fileInput = document.getElementById('inputFile');
-                const file = fileInput.files[0];
-                if (!file) {
-                    throw new Error('Please select a file');
-                }
-
-                // Show progress bar for file uploads
-                uploadProgress.style.display = 'block';
-
-                // Create FormData
-                const formData = new FormData();
-                formData.append('file', file);
-
-                // Create promise to handle XMLHttpRequest
-                response = await new Promise((resolve, reject) => {
-                    const xhr = new XMLHttpRequest();
-
-                    xhr.upload.addEventListener('progress', (e) => {
-                        if (e.lengthComputable) {
-                            const percentComplete = Math.round((e.loaded / e.total) * 100);
-                            progressBar.style.width = percentComplete + '%';
-                            progressBar.setAttribute('aria-valuenow', percentComplete);
-                            progressBar.textContent = percentComplete + '%';
-                            uploadStatus.textContent = 'Uploading file...';
-                        }
-                    });
-
-                    xhr.addEventListener('load', () => {
-                        if (xhr.status >= 200 && xhr.status < 300) {
-                            uploadStatus.textContent = 'Upload complete! Processing file...';
-                            resolve(new Response(xhr.response, {
-                                status: xhr.status,
-                                statusText: xhr.statusText,
-                                headers: {
-                                    'Content-Type': 'application/json'
-                                }
-                            }));
-                        } else {
-                            reject(new Error('Upload failed'));
-                        }
-                    });
-
-                    xhr.addEventListener('error', () => {
-                        uploadStatus.textContent = 'Upload failed!';
-                        reject(new Error('Network error occurred'));
-                    });
-
-                    xhr.open('POST', '/api/count-chars');
-                    xhr.send(formData);
-                });
-            }
-
-            const data = await response.json();
-
-            if (response.ok) {
-                // Hide progress bar on success
-                if (activeTab === 'file-tab') {
-                    setTimeout(() => {
-                        uploadProgress.style.display = 'none';
-                        // Reset progress bar
-                        progressBar.style.width = '0%';
-                        progressBar.setAttribute('aria-valuenow', 0);
-                        progressBar.textContent = '0%';
-                    }, 1000);
-                }
-
-                displayResults(data);
-            } else {
-                throw new Error(data.error || 'Failed to process input');
-            }
-        } catch (error) {
-            // Hide progress bar on error
-            uploadProgress.style.display = 'none';
-            resultElement.textContent = 'Error: ' + error.message;
-            resultsSection.style.display = 'block';
-            visualizationSection.style.display = 'none';
-        }
-    }
-    // Updated switchLanguage function
-    function switchLanguage(language, exampleClass) {
-        document.querySelectorAll(`.${exampleClass} > .code-example`).forEach(el => {
-            el.classList.remove('active');
-        });
-        document.querySelector(`.${exampleClass} > .code-example[data-language="${language}"]`).classList.add('active');
-    }
-
-    // Initialize Prism highlighting
-    document.addEventListener('DOMContentLoaded', function() {
-        Prism.highlightAll();
-    });
-
-
-    // Drag and drop functionality
-    function setupDragAndDrop() {
-        const dragDropZone = document.getElementById('dragDropZone');
-        const fileInput = document.getElementById('inputFile');
-
-        // Open file dialog when clicking the drag-drop zone
-        dragDropZone.addEventListener('click', () => {
-            fileInput.click();
-        });
-
-        // Prevent default drag behaviors
-        ['dragenter', 'dragover', 'dragleave', 'drop'].forEach(eventName => {
-            dragDropZone.addEventListener(eventName, preventDefaults, false);
-            document.body.addEventListener(eventName, preventDefaults, false);
-        });
-
-        // Handle drag enter and leave
-        ['dragenter', 'dragover'].forEach(eventName => {
-            dragDropZone.addEventListener(eventName, highlight, false);
-        });
-
-        ['dragleave', 'drop'].forEach(eventName => {
-            dragDropZone.addEventListener(eventName, unhighlight, false);
-        });
-
-        // Handle dropped files
-        dragDropZone.addEventListener('drop', handleDrop, false);
-
-        function preventDefaults(e) {
-            e.preventDefault();
-            e.stopPropagation();
-        }
-
-        function highlight(e) {
-            dragDropZone.classList.add('dragover');
-        }
-
-        function unhighlight(e) {
-            dragDropZone.classList.remove('dragover');
-        }
-
-        function handleDrop(e) {
-            const dt = e.dataTransfer;
-            const files = dt.files;
-
-            if (files.length > 0) {
-                fileInput.files = files;
-                //                    // Trigger analysis if a file is dropped
-                analyzeInput();
-            }
-        }
-
-        // Update file input change handler
-        fileInput.addEventListener('change', () => {
-            if (fileInput.files.length > 0) {
-                analyzeInput();
-            }
-        });
-    }
-
-    // Initialize drag and drop when the document is loaded
-    document.addEventListener('DOMContentLoaded', function() {
-        setupDragAndDrop();
-    });
-</script>
 </body>
 </html>
