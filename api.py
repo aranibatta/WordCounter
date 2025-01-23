@@ -1,21 +1,26 @@
 import os
-from flask import Flask, request, jsonify, send_from_directory, redirect, url_for
-from flask_cors import CORS
 import logging
+from flask import Flask, request, jsonify, send_from_directory
+from flask_cors import CORS
 import re
 from werkzeug.utils import secure_filename
 from PyPDF2 import PdfReader
 import markdown
 import secrets
-from shutil import copyfile
 from models import Analysis
 from app import app, db
 import nltk
 from nltk.tokenize import sent_tokenize, word_tokenize
 from statistics import mean
 
+# Configure logging
+logging.basicConfig(level=logging.DEBUG)
+
 # Download required NLTK data
-nltk.download('punkt', quiet=True)
+try:
+    nltk.data.find('tokenizers/punkt')
+except LookupError:
+    nltk.download('punkt')
 
 # Initialize Flask app
 CORS(app)  # Enable CORS for all routes
@@ -24,10 +29,10 @@ CORS(app)  # Enable CORS for all routes
 UPLOAD_FOLDER = 'uploads'
 ALLOWED_EXTENSIONS = {'pdf', 'md', 'txt'}
 
-if not os.path.exists(UPLOAD_FOLDER):
-    os.makedirs(UPLOAD_FOLDER)
-
+# Ensure upload directory exists with proper permissions
+os.makedirs(UPLOAD_FOLDER, exist_ok=True)
 app.config['UPLOAD_FOLDER'] = UPLOAD_FOLDER
+app.config['MAX_CONTENT_LENGTH'] = 16 * 1024 * 1024  # 16MB max file size
 
 def allowed_file(filename):
     return '.' in filename and filename.rsplit('.', 1)[1].lower() in ALLOWED_EXTENSIONS
@@ -201,10 +206,17 @@ def count_characters():
         text = None
         if 'file' in request.files:
             file = request.files['file']
-            if file and allowed_file(file.filename):
-                text = process_file_content(file)
-            else:
+            if not file:
+                return jsonify({'error': 'No file provided'}), 400
+
+            if not allowed_file(file.filename):
                 return jsonify({'error': 'Invalid file type. Allowed types: PDF, MD, TXT'}), 400
+
+            try:
+                text = process_file_content(file)
+            except Exception as e:
+                logging.error(f"File processing error: {str(e)}")
+                return jsonify({'error': f'Error processing file: {str(e)}'}), 500
         else:
             data = request.get_json()
             if not data or 'text' not in data:
@@ -227,19 +239,27 @@ def count_characters():
                     word_counts[cleaned_word] = word_counts.get(cleaned_word, 0) + 1
 
         # Calculate complexity metrics
-        complexity_analysis = calculate_complexity_metrics(text)
+        try:
+            complexity_analysis = calculate_complexity_metrics(text)
 
-        # Prepare response
-        results = {
-            'counts': word_counts,
-            'total_length': len(valid_words),
-            'complexity_analysis': complexity_analysis,
-            'overall_metrics': {
-                'avg_complexity': mean([s['complexity_score'] for s in complexity_analysis]),
-                'sentence_count': len(complexity_analysis),
-                'avg_sentence_length': mean([s['metrics']['word_count'] for s in complexity_analysis])
+            # Prepare response
+            results = {
+                'counts': word_counts,
+                'total_length': len(valid_words),
+                'complexity_analysis': complexity_analysis,
+                'overall_metrics': {
+                    'avg_complexity': mean([s['complexity_score'] for s in complexity_analysis]),
+                    'sentence_count': len(complexity_analysis),
+                    'avg_sentence_length': mean([s['metrics']['word_count'] for s in complexity_analysis])
+                }
             }
-        }
+        except Exception as e:
+            logging.error(f"Error calculating complexity metrics: {str(e)}")
+            # If complexity analysis fails, return basic word count results
+            results = {
+                'counts': word_counts,
+                'total_length': len(valid_words)
+            }
 
         # Generate unique share ID and save analysis
         share_id = secrets.token_urlsafe(12)
@@ -252,7 +272,7 @@ def count_characters():
         db.session.commit()
 
         # Add share URL to response
-        results['share_url'] = url_for('get_analysis', share_id=share_id, _external=True)
+        results['share_url'] = request.host_url.rstrip('/') + url_for('get_analysis', share_id=share_id)
 
         logging.debug(f"Processed text with {len(valid_words)} words and {len(word_counts)} unique words")
         return jsonify(results), 200
