@@ -673,6 +673,63 @@ const analyzeFile = async (fileInput) => {
             return button;
         });
 
+        function displayResults(data) {
+            const resultElement = document.getElementById('result');
+            const resultsSection = document.getElementById('resultsSection');
+            const visualizationSection = document.getElementById('visualizationSection');
+
+            const jsonString = JSON.stringify(data, null, 2);
+            resultElement.textContent = jsonString;
+            // Trigger Prism.js highlighting
+            Prism.highlightElement(resultElement);
+            resultElement.setAttribute('data-raw', JSON.stringify(data));
+
+            // Show results sections
+            resultsSection.style.display = 'block';
+            visualizationSection.style.display = 'block';
+
+            // Create visualization
+            const sortedWords = Object.entries(data.counts)
+                .sort(([,a], [,b]) => b - a)
+                .slice(0, 20);
+            const labels = sortedWords.map(([word]) => word);
+            const frequencies = sortedWords.map(([,count]) => count);
+
+            createChart(labels, frequencies);
+
+            // If there's a share URL, show it
+            if (data.share_url) {
+                // Remove existing share alert if any
+                const existingAlert = resultsSection.querySelector('.alert');
+                if (existingAlert) {
+                    existingAlert.remove();
+                }
+
+                const shareAlert = document.createElement('div');
+                shareAlert.className = 'alert alert-info mt-3';
+                shareAlert.innerHTML = `
+                    Share this analysis: 
+                    <input type="text" class="form-control mt-2" value="${data.share_url}" readonly>
+                    <button class="btn btn-secondary btn-sm mt-2" onclick="copyShareUrl('${data.share_url}')">
+                        <i class="bi bi-clipboard"></i> Copy Link
+                    </button>
+                `;
+                resultsSection.insertBefore(shareAlert, resultsSection.firstChild);
+            }
+        }
+
+        function copyShareUrl(url) {
+            navigator.clipboard.writeText(url).then(() => {
+                const copyBtn = event.target.closest('button');
+                const originalContent = copyBtn.innerHTML;
+                copyBtn.innerHTML = '<i class="bi bi-check"></i> Copied!';
+                setTimeout(() => {
+                    copyBtn.innerHTML = originalContent;
+                }, 2000);
+            });
+        }
+
+
         async function analyzeInput() {
             const resultElement = document.getElementById('result');
             const resultsSection = document.getElementById('resultsSection');
@@ -914,6 +971,12 @@ const analyzeFile = async (fileInput) => {
 
         // If there's a share URL, show it
         if (data.share_url) {
+            // Remove existing share alert if any
+            const existingAlert = resultsSection.querySelector('.alert');
+            if (existingAlert) {
+                existingAlert.remove();
+            }
+
             const shareAlert = document.createElement('div');
             shareAlert.className = 'alert alert-info mt-3';
             shareAlert.innerHTML = `
