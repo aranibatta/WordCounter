@@ -4,6 +4,8 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Word Counter</title>
+    <!-- Add favicon -->
+    <link rel="icon" type="image/x-icon" href="/favicon.ico">
     <!-- Add IBM Plex Sans font -->
     <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600&display=swap" rel="stylesheet">
     <link href="https://cdn.replit.com/agent/bootstrap-agent-dark-theme.min.css" rel="stylesheet">
@@ -851,7 +853,7 @@ const analyzeFile = async (fileInput) => {
 
                 if (files.length > 0) {
                     fileInput.files = files;
-                    // Trigger analysis if a file is dropped
+                    //                    // Trigger analysis if a file is dropped
                     analyzeInput();
                 }
             }

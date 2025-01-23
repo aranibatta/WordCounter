@@ -6,6 +6,7 @@ import re
 from werkzeug.utils import secure_filename
 from PyPDF2 import PdfReader
 import markdown
+from shutil import copyfile # Added import statement
 
 # Initialize Flask app
 app = Flask(__name__)
@@ -195,3 +196,8 @@ def count_characters():
 @app.route('/')
 def home():
     return app.send_static_file('index.html')
+
+# Add route to serve favicon
+@app.route('/favicon.ico')
+def favicon():
+    return send_from_directory('static', 'favicon.ico') #Corrected to .ico
