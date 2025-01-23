@@ -340,7 +340,33 @@
                         </div>
 
                         <div class="mt-3" id="resultsSection" style="display: none;">
-                            <h6>Result:</h6>
+                            <h6>Analysis Results:</h6>
+                            <div class="card mb-3">
+                                <div class="card-body">
+                                    <h6 class="card-title">Sentiment Analysis</h6>
+                                    <div id="sentimentResult">
+                                        <div class="d-flex justify-content-between align-items-center mb-2">
+                                            <span>Overall Sentiment:</span>
+                                            <span id="overallSentiment" class="badge"></span>
+                                        </div>
+                                        <div class="progress mb-2" style="height: 20px;">
+                                            <div class="progress-bar bg-success" id="positiveScore" role="progressbar" style="width: 0%">
+                                                Positive
+                                            </div>
+                                        </div>
+                                        <div class="progress mb-2" style="height: 20px;">
+                                            <div class="progress-bar bg-warning" id="neutralScore" role="progressbar" style="width: 0%">
+                                                Neutral
+                                            </div>
+                                        </div>
+                                        <div class="progress mb-2" style="height: 20px;">
+                                            <div class="progress-bar bg-danger" id="negativeScore" role="progressbar" style="width: 0%">
+                                                Negative
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
                             <div class="position-relative">
                                 <pre><code class="language-json" id="result">Results will appear here...</code></pre>
                                 <button class="btn btn-sm btn-outline-secondary copy-button" onclick="copyResult()">
@@ -778,6 +804,27 @@ const analyzeFile = async (fileInput) => {
                     resultsSection.style.display = 'block';
                     visualizationSection.style.display = 'block';
 
+                    // Update sentiment display
+                    const sentimentScores = data.sentiment.scores;
+                    const overallSentiment = data.sentiment.overall_sentiment;
+
+                    // Update sentiment badge
+                    const sentimentBadge = document.getElementById('overallSentiment');
+                    sentimentBadge.textContent = overallSentiment.toUpperCase();
+                    sentimentBadge.className = 'badge ' + 
+                        (overallSentiment === 'positive' ? 'bg-success' : 
+                         overallSentiment === 'negative' ? 'bg-danger' : 'bg-warning');
+
+                    // Update sentiment score bars
+                    document.getElementById('positiveScore').style.width = `${sentimentScores.pos * 100}%`;
+                    document.getElementById('positiveScore').textContent = `Positive ${(sentimentScores.pos * 100).toFixed(1)}%`;
+
+                    document.getElementById('neutralScore').style.width = `${sentimentScores.neu * 100}%`;
+                    document.getElementById('neutralScore').textContent = `Neutral ${(sentimentScores.neu * 100).toFixed(1)}%`;
+
+                    document.getElementById('negativeScore').style.width = `${sentimentScores.neg * 100}%`;
+                    document.getElementById('negativeScore').textContent = `Negative ${(sentimentScores.neg * 100).toFixed(1)}%`;
+
                     const counts = data.counts;
                     const sortedWords = Object.entries(counts)
                         .sort(([,a], [,b]) => b - a)
@@ -982,6 +1029,50 @@ const analyzeFile = async (fileInput) => {
             // Add count label
             doc.text(count.toString(), (pageWidth - barWidth) / 2 + width + 5, y + barHeight/2, { align: 'left' });
         });
+
+        // Add sentiment analysis section to PDF
+        doc.addPage();
+        doc.setTextColor(0, 0, 0);
+        doc.setFontSize(18);
+        doc.setFont('helvetica', 'bold');
+        doc.text('Sentiment Analysis', pageWidth / 2, 40, { align: 'center' });
+
+        // Add overall sentiment
+        doc.setFontSize(14);
+        doc.text('Overall Sentiment:', pageWidth / 2, 70, { align: 'center' });
+
+        // Set color based on sentiment
+        const sentimentColor = rawData.sentiment.overall_sentiment === 'positive' ? [46, 184, 46] : 
+                             rawData.sentiment.overall_sentiment === 'negative' ? [220, 53, 69] : 
+                             [255, 193, 7];
+
+        doc.setTextColor(...sentimentColor);
+        doc.setFontSize(24);
+        doc.text(rawData.sentiment.overall_sentiment.toUpperCase(), pageWidth / 2, 100, { align: 'center' });
+
+        // Add sentiment scores
+        const scores = rawData.sentiment.scores;
+        doc.setTextColor(0, 0, 0);
+        doc.setFontSize(12);
+
+        const startY = 140;
+        const barWidth = 400;
+        const barHeight = 30;
+
+        // Positive score
+        doc.setFillColor(46, 184, 46);
+        doc.rect((pageWidth - barWidth) / 2, startY, barWidth * scores.pos, barHeight, 'F');
+        doc.text(`Positive: ${(scores.pos * 100).toFixed(1)}%`, (pageWidth - barWidth) / 2 - 5, startY + barHeight/2, { align: 'right' });
+
+        // Neutral score
+        doc.setFillColor(255, 193, 7);
+        doc.rect((pageWidth - barWidth) / 2, startY + 40, barWidth * scores.neu, barHeight, 'F');
+        doc.text(`Neutral: ${(scores.neu * 100).toFixed(1)}%`, (pageWidth - barWidth) / 2 - 5, startY + 40 + barHeight/2, { align: 'right' });
+
+        // Negative score
+        doc.setFillColor(220, 53, 69);
+        doc.rect((pageWidth - barWidth) / 2, startY + 80, barWidth * scores.neg, barHeight, 'F');
+        doc.text(`Negative: ${(scores.neg * 100).toFixed(1)}%`, (pageWidth - barWidth) / 2 - 5, startY + 80 + barHeight/2, { align: 'right' });
 
         // Add watermark
         doc.setFontSize(10);
