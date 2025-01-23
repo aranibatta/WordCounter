@@ -10,5 +10,3 @@ class Analysis(db.Model):
     content = db.Column(db.Text, nullable=False)  # Original text content
     results = db.Column(JSON, nullable=False)     # Analysis results
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
-    stored_filename = db.Column(db.String(255))   # Internal filename in uploads folder
-    original_filename = db.Column(db.String(255)) # Original filename from upload
