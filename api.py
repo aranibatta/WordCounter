@@ -225,9 +225,19 @@ def get_analysis_data(share_id):
     if not analysis:
         return jsonify({'error': 'Analysis not found'}), 404
 
+    # Add download URLs to the response
+    if analysis.stored_filename:
+        download_url = url_for('download_file', share_id=share_id, _external=True)
+    else:
+        download_url = url_for('download_text', share_id=share_id, _external=True)
+
     return jsonify({
         'text': analysis.content,
-        'results': analysis.results
+        'results': {
+            **analysis.results,
+            'download_url': download_url,  # Add download URL
+            'share_url': url_for('get_analysis', share_id=share_id, _external=True)
+        }
     }), 200
 
 @app.route('/')
