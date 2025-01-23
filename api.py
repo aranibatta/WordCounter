@@ -74,15 +74,15 @@ def clean_word(word):
         r'http[s]?://(?:[a-zA-Z]|[0-9]|[$-_@.&+]|[!*\\(\\),]|(?:%[0-9a-fA-F][0-9a-fA-F]))+'
     )
     if url_pattern.match(word):
-        return ''
+        return []
 
     # Remove special characters but preserve word boundaries
     # Keep apostrophes within words (e.g., "don't")
-    cleaned = re.sub(r'[^a-zA-Z\']', ' ', word)
+    cleaned = re.sub(r'[^a-zA-Z\' ]', ' ', word)
     # Remove standalone apostrophes and clean up spaces
     cleaned = re.sub(r'\s\'|\'\s|^\'+|\'+$', ' ', cleaned)
-    # Convert to lowercase and split into words
-    return [w.lower() for w in cleaned.split() if w]
+    # Split into words, convert to lowercase, and filter empty strings
+    return [w.lower() for w in cleaned.split() if w and len(w) > 1]
 
 @app.route('/api/count-chars', methods=['POST'])
 def count_characters():
