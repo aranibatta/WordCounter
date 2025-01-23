@@ -831,12 +831,11 @@ const analyzeFile = async (fileInput) => {
                 document.body.addEventListener(eventName, preventDefaults, false);
             });
 
-            // Handle drag enter and leave
-            ['dragenter', 'dragover'].forEach(eventName => {
+            // Handle drag enter and leave            ['dragenter', 'dragover'].forEach(eventName => {
                 dragDropZone.addEventListener(eventName, highlight, false);
             });
 
-['dragleave', 'drop'].forEach(eventName => {
+            ['dragleave', 'drop'].forEach(eventName => {
                 dragDropZone.addEventListener(eventName, unhighlight, false);
             });
 
@@ -881,229 +880,168 @@ const analyzeFile = async (fileInput) => {
         });
     </script>
     <script>
-    let currentFileType = null;
-    let originalContent = null;
-    let originalPdfBytes = null;
+        let currentFileType = null;
+        let originalContent = null;
+        let extractedText = null;
 
-    // Modify file input handler to store file type and content
-    document.getElementById('inputFile').addEventListener('change', function(e) {
-        const file = e.target.files[0];
-        if (file) {
-            currentFileType = file.name.split('.').pop().toLowerCase();
-
-            if (currentFileType === 'pdf') {
-                const reader = new FileReader();
-                reader.onload = function(e) {
-                    originalPdfBytes = new Uint8Array(e.target.result);
-                }
-                reader.readAsArrayBuffer(file);
-            } else {
-                const reader = new FileReader();
-                reader.onload = function(e) {
-                    originalContent = e.target.result;
-                }
-                reader.readAsText(file);
+        // Modify file input handler to store file type and content
+        document.getElementById('inputFile').addEventListener('change', function(e) {
+            const file = e.target.files[0];
+            if (file) {
+                currentFileType = file.name.split('.').pop().toLowerCase();
             }
-        }
-    });
+        });
 
-    async function generateInfographic() {
-        try {
-            // Initialize jsPDF
-            const { jsPDF } = window.jspdf;
-            const doc = new jsPDF('p', 'pt', 'a4');
-            const pageWidth = doc.internal.pageSize.width;
-            const pageHeight = doc.internal.pageSize.height;
+        // Store the extracted text when we get the API response
+        const originalAnalyzeInput = analyzeInput;
+        analyzeInput = async function() {
+            await originalAnalyzeInput.call(this);
+            // Store the text content from the API response
+            const resultElement = document.getElementById('result');
+            const rawData = JSON.parse(resultElement.getAttribute('data-raw'));
 
-            // First page - Analysis Report
-            // Set background
-            doc.setFillColor(251, 250, 233); // #FBFAE9
-            doc.rect(0, 0, pageWidth, pageHeight, 'F');
+            // Store the original text in the chart element's dataset
+            const chartElement = document.getElementById('freqChart');
+            if (rawData.original_text) {
+                chartElement.dataset.originalText = rawData.original_text;
+            }
 
-            // Add title
-            doc.setTextColor(0, 0, 0);
-            doc.setFont('helvetica', 'bold');
-            doc.setFontSize(24);
-            doc.text('Text Analysis Results', pageWidth / 2, 40, { align: 'center' });
+            // Show download button
+            document.getElementById('downloadInfographic').style.display = 'inline-block';
+        };
 
-            // Add timestamp
-            const date = new Date().toLocaleDateString();
-            doc.setFontSize(12);
-            doc.setFont('helvetica', 'normal');
-            doc.text(`Generated on ${date}`, pageWidth / 2, 60, { align: 'center' });
+        async function generateInfographic() {
+            try {
+                // Initialize jsPDF
+                const { jsPDF } = window.jspdf;
+                const doc = new jsPDF('p', 'pt', 'a4');
+                const pageWidth = doc.internal.pageSize.width;
+                const pageHeight = doc.internal.pageSize.height;
 
-            // Get the data from the current analysis
-            const rawData = JSON.parse(document.getElementById('result').getAttribute('data-raw'));
-            const totalWords = rawData.total_length;
-            const wordCounts = rawData.counts;
+                // First page - Analysis Report
+                // Set background
+                doc.setFillColor(251, 250, 233); // #FBFAE9
+                doc.rect(0, 0, pageWidth, pageHeight, 'F');
 
-            // Add total word count
-            doc.setFontSize(18);
-            doc.setFont('helvetica', 'bold');
-            doc.text('Total Words Analyzed', pageWidth / 2, 100, { align: 'center' });
-            doc.setFontSize(36);
-            doc.setTextColor(244, 123, 84); // #F47B54
-            doc.text(totalWords.toString(), pageWidth / 2, 140, { align: 'center' });
-
-            // Add top words section
-            doc.setTextColor(0, 0, 0);
-            doc.setFontSize(18);
-            doc.text('Most Frequent Words', pageWidth / 2, 200, { align: 'center' });
-
-            // Create bar chart
-            const sortedWords = Object.entries(wordCounts)
-                .sort(([,a], [,b]) => b - a)
-                .slice(0, 10);
-
-            const barWidth = 400;
-            const barHeight = 20;
-            const barGap = 10;
-            const startY = 220;
-            const maxCount = Math.max(...sortedWords.map(([,count]) => count));
-
-            // Get the colors from the current chart
-            const chartColors = chart.data.datasets[0].backgroundColor;
-
-            sortedWords.forEach(([word, count], index) => {
-                const y = startY + (barHeight + barGap) * index;
-                const width = (count / maxCount) * barWidth;
-
-                // Parse the RGBA color from the chart
-                const color = chartColors[index % chartColors.length];
-                const rgba = color.match(/[\d.]+/g);
-                const [r, g, b] = rgba.map(n => Math.round(parseFloat(n)));
-
-                // Draw bar
-                doc.setFillColor(r, g, b);
-                doc.rect((pageWidth - barWidth) / 2, y, width, barHeight, 'F');
-
-                // Add word label
-                doc.setFontSize(12);
+                // Add title
                 doc.setTextColor(0, 0, 0);
+                doc.setFont('helvetica', 'bold');
+                doc.setFontSize(24);
+                doc.text('Text Analysis Results', pageWidth / 2, 40, { align: 'center' });
+
+                // Add timestamp
+                const date = new Date().toLocaleDateString();
+                doc.setFontSize(12);
                 doc.setFont('helvetica', 'normal');
-                doc.text(word, (pageWidth - barWidth) / 2 - 5, y + barHeight/2, { align: 'right' });
+                doc.text(`Generated on ${date}`, pageWidth / 2, 60, { align: 'center' });
 
-                // Add count label
-                doc.text(count.toString(), (pageWidth - barWidth) / 2 + width + 5, y + barHeight/2, { align: 'left' });
-            });
+                // Get the data from the current analysis
+                const rawData = JSON.parse(document.getElementById('result').getAttribute('data-raw'));
+                const totalWords = rawData.total_length;
+                const wordCounts = rawData.counts;
 
-            // Add watermark to first page
-            doc.setFontSize(10);
-            doc.setTextColor(200, 200, 200);
-            doc.text('Generated by Word Counter', pageWidth / 2, pageHeight - 20, { align: 'center' });
+                // Add total word count
+                doc.setFontSize(18);
+                doc.setFont('helvetica', 'bold');
+                doc.text('Total Words Analyzed', pageWidth / 2, 100, { align: 'center' });
+                doc.setFontSize(36);
+                doc.setTextColor(244, 123, 84); // #F47B54
+                doc.text(totalWords.toString(), pageWidth / 2, 140, { align: 'center' });
 
-            if (currentFileType === 'pdf' && originalPdfBytes) {
-                // For PDF files, merge with the original PDF
-                const { PDFDocument } = window.PDFLib;
+                // Add top words section
+                doc.setTextColor(0, 0, 0);
+                doc.setFontSize(18);
+                doc.text('Most Frequent Words', pageWidth / 2, 200, { align: 'center' });
 
-                // Create a new PDF document from the analysis page
-                const analysisPdfBytes = doc.output('arraybuffer');
-                const mergedPdf = await PDFDocument.create();
+                // Create bar chart
+                const sortedWords = Object.entries(wordCounts)
+                    .sort(([,a], [,b]) => b - a)
+                    .slice(0, 10);
 
-                // Load both PDFs
-                const analysisPdfDoc = await PDFDocument.load(analysisPdfBytes);
-                const originalPdfDoc = await PDFDocument.load(originalPdfBytes);
+                const barWidth = 400;
+                const barHeight = 20;
+                const barGap = 10;
+                const startY = 220;
+                const maxCount = Math.max(...sortedWords.map(([,count]) => count));
 
-                // Copy pages from analysis PDF
-                const analysisPages = await mergedPdf.copyPages(analysisPdfDoc, [0]);
-                analysisPages.forEach(page => mergedPdf.addPage(page));
+                // Get the colors from the current chart
+                const chartColors = chart.data.datasets[0].backgroundColor;
 
-                // Copy pages from original PDF
-                const originalPages = await mergedPdf.copyPages(originalPdfDoc, originalPdfDoc.getPageIndices());
-                originalPages.forEach(page => mergedPdf.addPage(page));
+                sortedWords.forEach(([word, count], index) => {
+                    const y = startY + (barHeight + barGap) * index;
+                    const width = (count / maxCount) * barWidth;
 
-                // Save and download the merged PDF
-                const mergedPdfBytes = await mergedPdf.save();
-                const blob = new Blob([mergedPdfBytes], { type: 'application/pdf' });
-                const url = URL.createObjectURL(blob);
-                const link = document.createElement('a');
-                link.href = url;
-                link.download = 'text-analysis-report.pdf';
-                link.click();
-                URL.revokeObjectURL(url);
-                return;
-            }
+                    // Parse the RGBA color from the chart
+                    const color = chartColors[index % chartColors.length];
+                    const rgba = color.match(/[\d.]+/g);
+                    const [r, g, b] = rgba.map(n => Math.round(parseFloat(n)));
 
-            // Handle non-PDF files (markdown and plain text)
-            // Add new page for text content
-            doc.addPage();
+                    // Draw bar
+                    doc.setFillColor(r, g, b);
+                    doc.rect((pageWidth - barWidth) / 2, y, width, barHeight, 'F');
 
-            // Add original text with appropriate formatting
-            doc.setTextColor(0, 0, 0);
-            doc.setFontSize(14);
-            doc.setFont('helvetica', 'bold');
-            doc.text('Original Text', 40, 40);
+                    // Add word label
+                    doc.setFontSize(12);
+                    doc.setTextColor(0, 0, 0);
+                    doc.setFont('helvetica', 'normal');
+                    doc.text(word, (pageWidth - barWidth) / 2 - 5, y + barHeight/2, { align: 'right' });
 
-            doc.setFontSize(12);
-            doc.setFont('helvetica', 'normal');
-
-            if (currentFileType === 'md' && originalContent) {
-                // Convert markdown to HTML
-                const md = window.markdownit();
-                const html = md.render(originalContent);
-
-                // Simple HTML to PDF formatting
-                const div = document.createElement('div');
-                div.innerHTML = html;
-                let yOffset = 70;
-
-                // Process each element
-                div.childNodes.forEach(node => {
-                    if (node.textContent) {
-                        const text = node.textContent.trim();
-                        if (text) {
-                            if (node.nodeName === 'H1') {
-                                doc.setFontSize(20);
-                                doc.setFont('helvetica', 'bold');
-                            } else if (node.nodeName === 'H2') {
-                                doc.setFontSize(18);
-                                doc.setFont('helvetica', 'bold');
-                            } else {
-                                doc.setFontSize(12);
-                                doc.setFont('helvetica', 'normal');
-                            }
-
-                            const lines = doc.splitTextToSize(text, pageWidth - 80);
-                            doc.text(lines, 40, yOffset);
-                            yOffset += (lines.length * 15) + 10;
-
-                            // Add new page if needed
-                            if (yOffset > pageHeight - 40) {
-                                doc.addPage();
-                                yOffset = 40;
-                            }
-                        }
-                    }
+                    // Add count label
+                    doc.text(count.toString(), (pageWidth - barWidth) / 2 + width + 5, y + barHeight/2, { align: 'left' });
                 });
-            } else if (originalContent) {
-                // Plain text formatting
-                const lines = doc.splitTextToSize(originalContent, pageWidth - 80);
-                let yOffset = 70;
 
-                for (let i = 0; i < lines.length; i++) {
-                    if (yOffset > pageHeight - 40) {
-                        doc.addPage();
-                        yOffset = 40;
+                // Add watermark to first page
+                doc.setFontSize(10);
+                doc.setTextColor(200, 200, 200);
+                doc.text('Generated by Word Counter', pageWidth / 2, pageHeight - 20, { align: 'center' });
+
+                // Add new page for original text content
+                doc.addPage();
+
+                // Add original text with appropriate formatting
+                doc.setTextColor(0, 0, 0);
+                doc.setFontSize(14);
+                doc.setFont('helvetica', 'bold');
+                doc.text('Original Text', 40, 40);
+
+                doc.setFontSize(12);
+                doc.setFont('helvetica', 'normal');
+
+                // Get the text from the textarea or file input
+                let textContent = '';
+                if (document.querySelector('#inputTabs .nav-link.active').id === 'text-tab') {
+                    textContent = document.getElementById('inputText').value;
+                } else {
+                    // For uploaded files, use the text that was processed by the API
+                    const uploadedTextElement = document.querySelector('#freqChart');
+                    if (uploadedTextElement && uploadedTextElement.dataset.originalText) {
+                        textContent = uploadedTextElement.dataset.originalText;
                     }
-                    doc.text(lines[i], 40, yOffset);
-                    yOffset += 15;
                 }
+
+                if (textContent) {
+                    // Format and add the text content
+                    const lines = doc.splitTextToSize(textContent, pageWidth - 80);
+                    let yOffset = 70;
+
+                    for (let i = 0; i < lines.length; i++) {
+                        if (yOffset > pageHeight - 40) {
+                            doc.addPage();
+                            yOffset = 40;
+                        }
+                        doc.text(lines[i], 40, yOffset);
+                        yOffset += 15;
+                    }
+                }
+
+                // Save the PDF
+                doc.save('text-analysis-report.pdf');
+            } catch (error) {
+                console.error('Error generating PDF:', error);
+                alert('An error occurred while generating the PDF. Please try again.');
             }
-
-            // Save the PDF for non-PDF files
-            doc.save('text-analysis-report.pdf');
-        } catch (error) {
-            console.error('Error generating PDF:', error);
-            alert('An error occurred while generating the PDF. Please try again.');
         }
-    }
 
-    // Modify analyzeInput function to show download button when analysis is complete
-    const originalAnalyzeInput = analyzeInput;
-    analyzeInput = async function() {
-        await originalAnalyzeInput.call(this);
-        document.getElementById('downloadInfographic').style.display = 'inline-block';
-    };
     </script>
 
 </body>
